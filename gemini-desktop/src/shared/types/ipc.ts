@@ -1,0 +1,427 @@
+/**
+ * IPC Types
+ *
+ * Type-safe IPC communication interfaces between main and renderer processes.
+ * Defines the ElectronAPI that is exposed to the renderer via contextBridge.
+ */
+
+import type { ThemeData, ThemePreference } from './theme';
+import type {
+    HotkeyId,
+    IndividualHotkeySettings,
+    HotkeyAccelerators,
+    HotkeySettings,
+    PlatformHotkeyStatus,
+} from './hotkeys';
+import type { UpdateInfo, DownloadProgress } from './updates';
+import type { ToastPayload } from './toast';
+import type { TextPredictionSettings } from './text-prediction';
+import type { GeminiNavigatePayload, GeminiReadyPayload, TabsState, TabShortcutPayload } from './tabs';
+
+/**
+ * Electron API exposed to renderer process via contextBridge.
+ * Available as `window.electronAPI` in renderer.
+ *
+ * This interface defines all IPC methods that can be called from the renderer process.
+ */
+export interface ElectronAPI {
+    // =========================================================================
+    // Window Controls
+    // =========================================================================
+
+    /** Minimize the current window */
+    minimizeWindow: () => void;
+
+    /** Maximize or restore the current window */
+    maximizeWindow: () => void;
+
+    /** Close the current window */
+    closeWindow: () => void;
+
+    /** Show the current window */
+    showWindow: () => void;
+
+    /** Check if the window is currently maximized */
+    isMaximized: () => Promise<boolean>;
+
+    /** Toggle fullscreen mode for the current window */
+    toggleFullscreen: () => void;
+
+    /** Open the options/settings window */
+    openOptions: (tab?: 'settings' | 'about') => void;
+
+    /** Open Google sign-in window */
+    openGoogleSignIn: () => Promise<void>;
+
+    restartApp: () => Promise<void>;
+
+    // =========================================================================
+    // Platform Detection
+    // =========================================================================
+
+    /** Current platform (darwin, win32, linux) */
+    platform: NodeJS.Platform;
+
+    /** Always true - indicates running in Electron */
+    isElectron: true;
+
+    // =========================================================================
+    // Theme API
+    // =========================================================================
+
+    /** Get current theme data */
+    getTheme: () => Promise<ThemeData>;
+
+    /** Set theme preference */
+    setTheme: (theme: ThemePreference) => void;
+
+    /** Listen for theme changes. Returns unsubscribe function. */
+    onThemeChanged: (callback: (themeData: ThemeData) => void) => () => void;
+
+    // =========================================================================
+    // Quick Chat API
+    // =========================================================================
+
+    /** Submit quick chat text to main window */
+    submitQuickChat: (text: string) => void;
+
+    /** Hide the quick chat window */
+    hideQuickChat: () => void;
+
+    /** Cancel quick chat (hide without submitting) */
+    cancelQuickChat: () => void;
+
+    /** Listen for quick chat execution. Returns unsubscribe function. */
+    onQuickChatExecute: (callback: (text: string) => void) => () => void;
+
+    // =========================================================================
+    // Gemini Iframe Navigation API
+    // Used by Quick Chat to navigate iframe without replacing React shell
+    // =========================================================================
+
+    /** Listen for Gemini navigation requests. Returns unsubscribe function. */
+    onGeminiNavigate: (callback: (data: GeminiNavigatePayload) => void) => () => void;
+
+    /** Signal to main process that Gemini iframe is ready for injection */
+    signalGeminiReady: (payload: GeminiReadyPayload) => void;
+
+    getTabState: () => Promise<TabsState | null>;
+
+    saveTabState: (state: TabsState) => void;
+
+    onTabShortcutTriggered: (callback: (payload: TabShortcutPayload) => void) => () => void;
+
+    onTabTitleUpdated: (callback: (payload: { tabId: string; title: string }) => void) => () => void;
+
+    updateTabTitle: (tabId: string, title: string) => void;
+
+    reloadTabs: (activeTabId?: string) => void;
+
+    // =========================================================================
+    // Individual Hotkeys API
+    // =========================================================================
+
+    /** Get individual hotkey settings */
+    getIndividualHotkeys: () => Promise<IndividualHotkeySettings>;
+
+    /** Set individual hotkey enabled state */
+    setIndividualHotkey: (id: HotkeyId, enabled: boolean) => void;
+
+    /** Listen for individual hotkey changes. Returns unsubscribe function. */
+    onIndividualHotkeysChanged: (callback: (settings: IndividualHotkeySettings) => void) => () => void;
+
+    // =========================================================================
+    // Hotkey Accelerators API
+    // =========================================================================
+
+    /** Get current hotkey accelerators */
+    getHotkeyAccelerators: () => Promise<HotkeyAccelerators>;
+
+    /** Get full hotkey settings (enabled states + accelerators) */
+    getFullHotkeySettings: () => Promise<HotkeySettings>;
+
+    /** Set accelerator for a specific hotkey */
+    setHotkeyAccelerator: (id: HotkeyId, accelerator: string) => void;
+
+    /** Listen for hotkey accelerator changes. Returns unsubscribe function. */
+    onHotkeyAcceleratorsChanged: (callback: (accelerators: HotkeyAccelerators) => void) => () => void;
+
+    // =========================================================================
+    // Always On Top API
+    // =========================================================================
+
+    /** Get always on top state */
+    getAlwaysOnTop: () => Promise<{ enabled: boolean }>;
+
+    /** Set always on top state */
+    setAlwaysOnTop: (enabled: boolean) => void;
+
+    /** Listen for always on top changes. Returns unsubscribe function. */
+    onAlwaysOnTopChanged: (callback: (data: { enabled: boolean }) => void) => () => void;
+
+    // =========================================================================
+    // Zoom API
+    // =========================================================================
+
+    /** Get current zoom level percentage (50-200) */
+    getZoomLevel: () => Promise<number>;
+
+    /** Increase zoom level to next step */
+    zoomIn: () => Promise<number>;
+
+    /** Decrease zoom level to previous step */
+    zoomOut: () => Promise<number>;
+
+    /** Listen for zoom level changes. Returns unsubscribe function. */
+    onZoomLevelChanged: (callback: (level: number) => void) => () => void;
+
+    // =========================================================================
+    // Auto-Update API
+    // =========================================================================
+
+    /** Get auto-update enabled state */
+    getAutoUpdateEnabled: () => Promise<boolean>;
+
+    /** Set auto-update enabled state */
+    setAutoUpdateEnabled: (enabled: boolean) => void;
+
+    /** Manually check for updates */
+    checkForUpdates: () => void;
+
+    /** Install downloaded update and restart app */
+    installUpdate: () => void;
+
+    /** Listen for update available. Returns unsubscribe function. */
+    onUpdateAvailable: (callback: (info: UpdateInfo) => void) => () => void;
+
+    /** Listen for update downloaded. Returns unsubscribe function. */
+    onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => () => void;
+
+    /** Listen for update errors. Returns unsubscribe function. */
+    onUpdateError: (callback: (error: string) => void) => () => void;
+
+    /** Listen for update not available. Returns unsubscribe function. */
+    onUpdateNotAvailable: (callback: (info: UpdateInfo) => void) => () => void;
+
+    /** Listen for manual update available. Returns unsubscribe function. */
+    onManualUpdateAvailable: (callback: (info: UpdateInfo) => void) => () => void;
+
+    /** Listen for download progress. Returns unsubscribe function. */
+    onDownloadProgress: (callback: (progress: DownloadProgress) => void) => () => void;
+
+    // =========================================================================
+    // Dev Testing API (only for manual testing in development)
+    // =========================================================================
+
+    /** Show test badge (dev only) */
+    devShowBadge: (version?: string) => void;
+
+    /** Clear test badge (dev only) */
+    devClearBadge: () => void;
+
+    /** Set update enabled (dev only) */
+    devSetUpdateEnabled: (enabled: boolean) => void;
+
+    /** Emit mock update event (dev only) */
+    devEmitUpdateEvent: (event: string, data: unknown) => void;
+
+    /** Mock platform (dev only) */
+    devMockPlatform: (platform: NodeJS.Platform | null, env: Record<string, string> | null) => void;
+
+    /** Trigger a response notification for dev testing (dev only) */
+    devTriggerResponseNotification: () => void;
+
+    // =========================================================================
+    // E2E Testing Helpers
+    // =========================================================================
+
+    /** Get tray tooltip (for testing) */
+    getTrayTooltip: () => Promise<string>;
+
+    /** Listen for checking for update event. Returns unsubscribe function. */
+    onCheckingForUpdate: (callback: () => void) => () => void;
+
+    /** Get last update check timestamp */
+    getLastUpdateCheckTime: () => Promise<number>;
+
+    /** Listen for debug error trigger (dev only) */
+    onDebugTriggerError: (callback: () => void) => () => void;
+
+    // =========================================================================
+    // Toast API
+    // =========================================================================
+
+    /**
+     * Listen for toast show events from main process.
+     * Called when main process wants to display a toast notification.
+     * Returns unsubscribe function.
+     */
+    onToastShow: (callback: (payload: ToastPayload) => void) => () => void;
+
+    // =========================================================================
+    // Shell API
+    // =========================================================================
+
+    /**
+     * Reveal a file in the system's file explorer.
+     * Opens the folder containing the file and selects it.
+     * @param path - Absolute path to the file to reveal
+     */
+    revealInFolder: (path: string) => void;
+
+    // =========================================================================
+    // Response Notifications API
+    // =========================================================================
+
+    /**
+     * Get whether response notifications are enabled.
+     * @returns Promise resolving to the enabled state
+     */
+    getResponseNotificationsEnabled: () => Promise<boolean>;
+
+    /**
+     * Set whether response notifications are enabled.
+     * @param enabled - Whether to enable response notifications
+     */
+    setResponseNotificationsEnabled: (enabled: boolean) => void;
+
+    // =========================================================================
+    // Launch at Startup API
+    // =========================================================================
+
+    /**
+     * Get whether launch at startup is enabled.
+     * @returns Promise resolving to the enabled state
+     */
+    getLaunchAtStartup: () => Promise<boolean>;
+
+    /**
+     * Set whether launch at startup is enabled.
+     * @param enabled - Whether to enable launch at startup
+     */
+    setLaunchAtStartup: (enabled: boolean) => void;
+
+    /**
+     * Get whether start minimized to tray is enabled.
+     * @returns Promise resolving to the enabled state
+     */
+    getStartMinimized: () => Promise<boolean>;
+
+    /**
+     * Set whether start minimized to tray is enabled.
+     * @param enabled - Whether to enable start minimized to tray
+     */
+    setStartMinimized: (enabled: boolean) => void;
+
+    // =========================================================================
+    // Text Prediction API
+    // =========================================================================
+
+    /**
+     * Get whether text prediction is enabled.
+     * @returns Promise resolving to the enabled state
+     */
+    getTextPredictionEnabled: () => Promise<boolean>;
+
+    /**
+     * Set whether text prediction is enabled.
+     * When enabling, triggers model download if not already downloaded.
+     * @param enabled - Whether to enable text prediction
+     */
+    setTextPredictionEnabled: (enabled: boolean) => Promise<void>;
+
+    /**
+     * Get whether GPU acceleration is enabled for text prediction.
+     * @returns Promise resolving to the GPU enabled state
+     */
+    getTextPredictionGpuEnabled: () => Promise<boolean>;
+
+    /**
+     * Set whether GPU acceleration is enabled for text prediction.
+     * Requires model reload to take effect.
+     * @param enabled - Whether to enable GPU acceleration
+     */
+    setTextPredictionGpuEnabled: (enabled: boolean) => Promise<void>;
+
+    /**
+     * Get the current text prediction status including enabled state,
+     * GPU state, model status, download progress, and any error message.
+     * @returns Promise resolving to the full settings state
+     */
+    getTextPredictionStatus: () => Promise<TextPredictionSettings>;
+
+    /**
+     * Listen for text prediction status changes.
+     * Called when model status, enabled state, or GPU state changes.
+     * @param callback - Function to call with updated settings
+     * @returns Unsubscribe function
+     */
+    onTextPredictionStatusChanged: (callback: (settings: TextPredictionSettings) => void) => () => void;
+
+    /**
+     * Listen for model download progress events.
+     * Called during model download with percentage complete.
+     * @param callback - Function to call with progress percentage (0-100)
+     * @returns Unsubscribe function
+     */
+    onTextPredictionDownloadProgress: (callback: (progress: number) => void) => () => void;
+
+    /**
+     * Request a text prediction for partial input.
+     * Returns null if model not ready or prediction times out.
+     * @param partialText - The partial text to get prediction for
+     * @returns Promise resolving to predicted text continuation or null
+     */
+    predictText: (partialText: string) => Promise<string | null>;
+
+    // =========================================================================
+    // Chat Export API
+    // =========================================================================
+
+    /**
+     * Export the current chat to a high-quality, text-selectable PDF.
+     */
+    exportChatToPdf: () => void;
+
+    /**
+     * Export the current chat to a Markdown file.
+     */
+    exportChatToMarkdown: () => void;
+
+    // =========================================================================
+    // Platform Hotkey Status API
+    // =========================================================================
+
+    /** Get current platform hotkey status (Wayland/Portal info) */
+    getPlatformHotkeyStatus: () => Promise<PlatformHotkeyStatus>;
+
+    /** Listen for platform hotkey status changes. Returns unsubscribe function. */
+    onPlatformHotkeyStatusChanged: (callback: (status: PlatformHotkeyStatus) => void) => () => void;
+
+    // =========================================================================
+    // Test-Only: D-Bus Activation Signal Tracking (Wayland Integration Tests)
+    // =========================================================================
+
+    /**
+     * Get D-Bus activation signal statistics.
+     * Returns tracking data for verified Activated signals on Wayland.
+     * Only populated when NODE_ENV=test or DEBUG_DBUS=1.
+     */
+    getDbusActivationSignalStats: () => Promise<{
+        trackingEnabled: boolean;
+        totalSignals: number;
+        signalsByShortcut: Record<string, number>;
+        lastSignalTime: number | null;
+        signals: ReadonlyArray<{
+            shortcutId: string;
+            timestamp: number;
+            sessionPath: string;
+        }>;
+    }>;
+
+    /**
+     * Clear D-Bus activation signal history.
+     * Useful for test isolation between test cases.
+     */
+    clearDbusActivationSignalHistory: () => void;
+}

@@ -1,0 +1,753 @@
+/**
+ * Auto-Update Manager
+ *
+ * Handles automatic application updates using electron-updater.
+ * Provides VS Code-style update experience with:
+ * - Background update checking
+ * - User opt-out via settings
+ * - Native OS notifications
+ * - Platform-specific handling (macOS, Windows, Linux)
+ *
+ * @module UpdateManager
+ */
+
+import { app, BrowserWindow, net } from 'electron';
+// NOTE: electron-updater is imported DYNAMICALLY to prevent D-Bus hang on Linux CI.
+// Static imports cause electron-updater to initialize on module load, which hangs
+// when there's no D-Bus session (headless Linux/CI environment).
+import type { UpdateInfo, AppUpdater } from 'electron-updater';
+import log from 'electron-log';
+import { createLogger } from '../utils/logger';
+import { coerce, compare, valid } from 'semver';
+import type SettingsStore from '../store';
+import { getPlatformAdapter } from '../platform/platformAdapterFactory';
+import type { PlatformAdapter } from '../platform/PlatformAdapter';
+import { LinuxX11Adapter } from '../platform/adapters/LinuxX11Adapter';
+import { MacAdapter } from '../platform/adapters/MacAdapter';
+import { WindowsAdapter } from '../platform/adapters/WindowsAdapter';
+import type BadgeManager from './badgeManager';
+import type TrayManager from './trayManager';
+import { IPC_CHANNELS } from '../../shared/constants/ipc-channels';
+const logger = createLogger('[UpdateManager]');
+
+// Re-export UpdateInfo for use in other modules
+export type { UpdateInfo };
+
+/**
+ * Settings interface for auto-update preferences
+ */
+export interface AutoUpdateSettings extends Record<string, unknown> {
+    autoUpdateEnabled: boolean;
+}
+
+/**
+ * Optional dependencies for visual notifications
+ */
+export interface UpdateManagerDeps {
+    badgeManager?: BadgeManager;
+    trayManager?: TrayManager;
+}
+
+/**
+ * Get the autoUpdater instance via dynamic import.
+ * This is critical for Linux CI - static import causes electron-updater to
+ * initialize immediately on module load, which hangs trying to connect to D-Bus.
+ */
+async function getAutoUpdater(): Promise<AppUpdater> {
+    const { autoUpdater } = await import('electron-updater');
+    return autoUpdater;
+}
+
+/**
+ * UpdateManager handles automatic application updates.
+ *
+ * Features:
+ * - Periodic background checking for updates
+ * - Silent download of updates
+ * - User notification when update is ready
+ * - Opt-out via settings
+ * - Platform-aware (disables for DEB/RPM Linux, portable Windows)
+ */
+export default class UpdateManager {
+    private autoUpdater: AppUpdater | null = null;
+    private autoUpdaterPromise: Promise<AppUpdater> | null = null;
+    private enabled: boolean = true;
+    private checkInterval: ReturnType<typeof setInterval> | null = null;
+    private lastCheckTime: number = 0;
+    private isFirstCheck: boolean = true;
+    private isManualCheck: boolean = false;
+    private readonly settings: SettingsStore<AutoUpdateSettings>;
+    private readonly badgeManager?: BadgeManager;
+    private readonly trayManager?: TrayManager;
+    private readonly updatesDisabled: boolean;
+    private manualUpdateOnly: boolean;
+
+    /**
+     * Creates a new UpdateManager instance.
+     * @param settings - Settings store for persisting auto-update preferences
+     * @param deps - Optional dependencies for visual notifications
+     */
+    constructor(settings: SettingsStore<AutoUpdateSettings>, deps?: UpdateManagerDeps) {
+        this.settings = settings;
+        this.badgeManager = deps?.badgeManager;
+        this.trayManager = deps?.trayManager;
+
+        // Check if we should disable updates FIRST before any autoUpdater initialization
+        // This prevents electron-updater from initializing native resources on unsupported platforms
+        // CRITICAL: This MUST happen synchronously in constructor to prevent D-Bus hang on Linux CI
+        this.updatesDisabled = this.shouldDisableUpdates();
+
+        const platformAdapter = this.getAdapterForUpdateChecks(this.mockPlatform || process.platform);
+        this.manualUpdateOnly = !platformAdapter.supportsAutoUpdate(this.mockEnv || process.env);
+
+        if (this.updatesDisabled && !this.manualUpdateOnly) {
+            this.enabled = false;
+            logger.log('Auto-updates disabled for this platform/install type');
+            logger.log(`UpdateManager initialized (enabled: ${this.enabled})`);
+            return; // Exit early - autoUpdater will never be loaded
+        }
+
+        if (this.manualUpdateOnly) {
+            this.enabled = this.settings.get('autoUpdateEnabled') ?? true;
+            logger.log('Manual-update-only mode enabled');
+            logger.log(`UpdateManager initialized (enabled: ${this.enabled}, manualUpdateOnly: true)`);
+
+            if (
+                this.enabled &&
+                app.isPackaged &&
+                !process.argv.includes('--test-auto-update') &&
+                !process.env.TEST_AUTO_UPDATE
+            ) {
+                this.startPeriodicChecks();
+            }
+            return;
+        }
+
+        // Load user preference (default to enabled)
+        this.enabled = this.settings.get('autoUpdateEnabled') ?? true;
+        logger.log(`UpdateManager initialized (enabled: ${this.enabled})`);
+
+        // Start periodic checks if enabled
+        // EXCEPTION: In test mode (--test-auto-update), we skip automatic checks
+        // because CI environments cannot reach GitHub releases. The test flag is
+        // specifically for verifying initialization works (dev-app-update.yml is found),
+        // not for testing actual network update checks.
+        if (this.enabled && !process.argv.includes('--test-auto-update') && !process.env.TEST_AUTO_UPDATE) {
+            this.startPeriodicChecks();
+        }
+    }
+
+    /**
+     * Lazily initialize the autoUpdater.
+     * This uses dynamic import to avoid loading electron-updater on unsupported platforms.
+     */
+    private async ensureAutoUpdater(): Promise<AppUpdater | null> {
+        if (this.updatesDisabled) {
+            return null;
+        }
+
+        if (this.autoUpdater) {
+            return this.autoUpdater;
+        }
+
+        // Avoid multiple concurrent imports
+        if (this.autoUpdaterPromise) {
+            return this.autoUpdaterPromise;
+        }
+
+        this.autoUpdaterPromise = (async () => {
+            logger.log('Lazily loading electron-updater...');
+            const updater = await getAutoUpdater();
+
+            // Configure auto-updater
+            updater.autoDownload = true;
+            updater.autoInstallOnAppQuit = true;
+
+            if (process.platform === 'win32') {
+                updater.channel = process.arch === 'arm64' ? 'latest-arm64' : 'latest-x64';
+                updater.allowDowngrade = false;
+            }
+
+            if (process.platform === 'darwin') {
+                updater.channel = process.arch === 'arm64' ? 'arm64' : 'x64';
+            }
+
+            if (process.argv.includes('--test-auto-update')) {
+                updater.forceDevUpdateConfig = true;
+            }
+
+            // Configure logging
+            updater.logger = log;
+            log.transports.file.level = 'info';
+
+            this.setupEventListeners(updater);
+            this.autoUpdater = updater;
+            logger.log('electron-updater loaded and configured');
+
+            return updater;
+        })();
+
+        return this.autoUpdaterPromise;
+    }
+
+    /**
+     * Determine if auto-updates should be disabled based on platform and install type.
+     * @returns true if updates should be disabled
+     */
+    private shouldDisableUpdates(): boolean {
+        const currentPlatform = this.mockPlatform || process.platform;
+        const currentEnv = this.mockEnv || process.env;
+
+        // Allow updates in test environment (Vitest, Integration Tests, or E2E with --test-auto-update flag)
+        if (currentEnv.VITEST || currentEnv.TEST_AUTO_UPDATE || process.argv.includes('--test-auto-update')) {
+            return false;
+        }
+
+        const platformAdapter = this.getAdapterForUpdateChecks(currentPlatform);
+
+        if (platformAdapter.shouldDisableUpdates(currentEnv)) {
+            if (currentPlatform === 'linux') {
+                logger.log('Linux non-AppImage detected (or simulated) - updates disabled');
+                return true;
+            }
+
+            if (currentPlatform === 'win32') {
+                logger.log('Windows Portable detected - updates disabled');
+                return true;
+            }
+        }
+
+        // Development mode - skip updates (unless testing)
+        if (!app.isPackaged && !process.argv.includes('--test-auto-update') && !currentEnv.TEST_AUTO_UPDATE) {
+            logger.log('Development mode detected - updates disabled');
+            return true;
+        }
+
+        return false;
+    }
+
+    private getAdapterForUpdateChecks(currentPlatform: NodeJS.Platform): PlatformAdapter {
+        if (!this.mockPlatform || currentPlatform === process.platform) {
+            return getPlatformAdapter();
+        }
+
+        switch (currentPlatform) {
+            case 'linux':
+                return new LinuxX11Adapter();
+            case 'win32':
+                return new WindowsAdapter();
+            case 'darwin':
+                return new MacAdapter();
+            default:
+                logger.warn(`Unsupported mocked platform '${currentPlatform}'. Falling back to host adapter.`);
+                return getPlatformAdapter();
+        }
+    }
+
+    /**
+     * Check if auto-updates are enabled.
+     */
+    isEnabled(): boolean {
+        return this.enabled;
+    }
+
+    /**
+     * Enable or disable auto-updates.
+     * Setting is persisted to disk.
+     * @param enabled - Whether to enable auto-updates
+     */
+    setEnabled(enabled: boolean): void {
+        this.enabled = enabled;
+        this.settings.set('autoUpdateEnabled', enabled);
+        logger.log(`Auto-updates ${enabled ? 'enabled' : 'disabled'}`);
+
+        if (enabled && !this.checkInterval) {
+            this.startPeriodicChecks();
+        } else if (!enabled && this.checkInterval) {
+            this.stopPeriodicChecks();
+        }
+    }
+
+    /**
+     * Check for updates.
+     * @param manual - If true, bypasses the enabled check (for user-initiated checks)
+     */
+    async checkForUpdates(manual: boolean = false): Promise<void> {
+        if (!this.enabled && !manual) {
+            logger.log('Update check skipped - updates disabled');
+            return;
+        }
+
+        if (!app.isPackaged && !process.argv.includes('--test-auto-update')) {
+            logger.log('Update check skipped - development mode');
+            return;
+        }
+
+        if (this.manualUpdateOnly) {
+            try {
+                this.isManualCheck = manual;
+                this.lastCheckTime = Date.now();
+                logger.log(manual ? 'Manual update check (GitHub API)...' : 'Checking for updates (GitHub API)...');
+                this.broadcastToWindows(IPC_CHANNELS.AUTO_UPDATE_CHECKING, null);
+
+                const updateInfo = await this.checkGitHubForLatestRelease();
+
+                if (updateInfo) {
+                    logger.log(`Manual update available: ${updateInfo.version}`);
+                    this.broadcastToWindows(IPC_CHANNELS.AUTO_UPDATE_MANUAL_UPDATE_AVAILABLE, updateInfo);
+                } else {
+                    logger.log('No update available (GitHub API)');
+                    if (this.isFirstCheck || this.isManualCheck) {
+                        this.broadcastToWindows(IPC_CHANNELS.AUTO_UPDATE_NOT_AVAILABLE, {
+                            version: app.getVersion(),
+                        });
+                    }
+                }
+            } catch (error) {
+                if (error instanceof Error && error.message === 'GITHUB_API_RESPONSE_NOT_OK') {
+                    logger.warn('GitHub API returned non-OK response');
+                } else {
+                    logger.error('GitHub update check failed:', error);
+                }
+
+                if (manual) {
+                    this.broadcastToWindows(
+                        IPC_CHANNELS.AUTO_UPDATE_ERROR,
+                        'Could not check for updates. Please check your internet connection.'
+                    );
+                } else {
+                    logger.log('Suppressing manual-update-only error notification (background check)');
+                }
+            } finally {
+                this.isFirstCheck = false;
+                this.isManualCheck = false;
+            }
+            return;
+        }
+
+        try {
+            logger.log(manual ? 'Manual update check...' : 'Checking for updates...');
+            this.isManualCheck = manual;
+            const updater = await this.ensureAutoUpdater();
+            if (!updater) {
+                logger.log('Update check skipped - updater not available');
+                return;
+            }
+            await updater.checkForUpdatesAndNotify();
+        } catch (error: unknown) {
+            logger.error('Update check failed:', error);
+
+            // Check if this is a known "benign" error (like 404/403 which means no access/no releases)
+            // or a network error which we should suppress for background checks
+            const errorStr = error instanceof Error ? error.message : String(error ?? '');
+            const errorStrLower = errorStr.toLowerCase();
+            const isNetworkOrConfigError =
+                errorStr.includes('404') ||
+                errorStr.includes('403') ||
+                errorStrLower.includes('github') ||
+                errorStr.includes('Network') ||
+                errorStr.includes('net::') ||
+                errorStr.includes('Cannot find latest') ||
+                errorStr.includes('no published versions');
+
+            // If it's a manual check, or if it's NOT a benign/network error, we warn the user.
+            // But if it IS a background check AND a network/config error, we stay silent to avoid annoying toasts.
+            if (manual || !isNetworkOrConfigError) {
+                // MASKED ERROR: Do NOT send the raw error message to the renderer/user.
+                this.broadcastToWindows(
+                    IPC_CHANNELS.AUTO_UPDATE_ERROR,
+                    'The auto-update service encountered an error. Please try again later.'
+                );
+            } else {
+                logger.log('Suppressing update error notification (background check + network/config error)');
+                logger.log('Suppressed error details:', errorStr || error);
+            }
+        }
+    }
+
+    private startupTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    /**
+     * Start periodic update checks.
+     * @param intervalMs - Interval between checks in milliseconds (default: 6 hours)
+     */
+    startPeriodicChecks(intervalMs: number = 6 * 60 * 60 * 1000): void {
+        if (this.checkInterval) {
+            clearInterval(this.checkInterval);
+        }
+
+        if (!this.enabled) {
+            logger.log('Periodic checks not started - updates disabled');
+            return;
+        }
+
+        this.checkInterval = setInterval(() => {
+            this.checkForUpdates();
+        }, intervalMs);
+
+        logger.log(`Periodic update checks started (interval: ${intervalMs / 1000}s)`);
+
+        // Also check immediately on startup (with a small delay)
+        // Clear any existing startup timeout first
+        if (this.startupTimeout) {
+            clearTimeout(this.startupTimeout);
+        }
+
+        this.startupTimeout = setTimeout(() => {
+            this.checkForUpdates();
+            this.startupTimeout = null;
+        }, 10000); // Wait 10 seconds after startup
+    }
+
+    /**
+     * Stop periodic update checks.
+     */
+    stopPeriodicChecks(): void {
+        if (this.checkInterval) {
+            clearInterval(this.checkInterval);
+            this.checkInterval = null;
+        }
+
+        if (this.startupTimeout) {
+            clearTimeout(this.startupTimeout);
+            this.startupTimeout = null;
+        }
+
+        logger.log('Periodic (and startup) update checks stopped');
+    }
+
+    /**
+     * Quit the application and install the pending update.
+     * Only works if an update has been downloaded.
+     */
+    quitAndInstall(): void {
+        logger.log('Quitting and installing update...');
+
+        // Clear native indicators before quitting
+        this.badgeManager?.clearUpdateBadge();
+        this.trayManager?.clearUpdateTooltip();
+
+        if (
+            this.mockEnv?.TEST_AUTO_UPDATE ||
+            process.env.TEST_AUTO_UPDATE ||
+            process.argv.includes('--test-auto-update') ||
+            process.argv.includes('--integration-test')
+        ) {
+            logger.log('Test auto-update mode detected - skipping quitAndInstall');
+            return;
+        }
+
+        if (this.autoUpdater) {
+            this.autoUpdater.quitAndInstall(false, true);
+        } else {
+            logger.warn('quitAndInstall called but autoUpdater not loaded');
+        }
+    }
+
+    /**
+     * Get the timestamp of the last update check.
+     */
+    getLastCheckTime(): number {
+        return this.lastCheckTime;
+    }
+
+    /**
+     * Get the current tray tooltip (for E2E testing).
+     */
+    getTrayTooltip(): string {
+        return this.trayManager?.getToolTip() || '';
+    }
+
+    /**
+     * Set up event listeners for auto-updater events.
+     * @param updater - The autoUpdater instance to attach listeners to
+     */
+    private setupEventListeners(updater: AppUpdater): void {
+        updater.on('error', (error) => {
+            logger.error('Auto-updater error:', error);
+            // MASKED ERROR: Do NOT send the raw error message to the renderer/user.
+            // Raw errors from electron-updater can be massive (HTML, full stack traces) and
+            // cause UI rendering issues (toasts going off-screen).
+            // We log the real error above for debugging, but tell the user a generic message.
+            this.broadcastToWindows(
+                IPC_CHANNELS.AUTO_UPDATE_ERROR,
+                'The auto-update service encountered an error. Please try again later.'
+            );
+        });
+
+        updater.on('checking-for-update', () => {
+            logger.log('Checking for update...');
+            this.lastCheckTime = Date.now();
+            this.broadcastToWindows(IPC_CHANNELS.AUTO_UPDATE_CHECKING, null);
+        });
+
+        updater.on('update-available', (info: UpdateInfo) => {
+            const currentVersion = this.normalizeVersion(app.getVersion());
+            const incomingVersion = this.normalizeVersion(info.version);
+
+            if (currentVersion && incomingVersion) {
+                const comparison = compare(currentVersion, incomingVersion);
+                if (comparison != null && comparison >= 0) {
+                    logger.warn(`Ignoring update-available for version ${info.version} (current: ${app.getVersion()})`);
+                    return;
+                }
+            }
+
+            logger.log(`Update available: ${info.version}`);
+            this.broadcastToWindows(IPC_CHANNELS.AUTO_UPDATE_AVAILABLE, info);
+            this.isFirstCheck = false;
+            this.isManualCheck = false;
+        });
+
+        updater.on('update-not-available', (info: UpdateInfo) => {
+            logger.log(`No update available (current: ${info.version})`);
+            if (this.isFirstCheck || this.isManualCheck) {
+                this.broadcastToWindows(IPC_CHANNELS.AUTO_UPDATE_NOT_AVAILABLE, info);
+            } else {
+                logger.log('Suppressing "up to date" notification (periodic background check)');
+            }
+            this.isFirstCheck = false;
+            this.isManualCheck = false;
+        });
+
+        updater.on('download-progress', (progress) => {
+            logger.log(`Download progress: ${progress.percent.toFixed(1)}%`);
+            this.broadcastToWindows(IPC_CHANNELS.AUTO_UPDATE_DOWNLOAD_PROGRESS, progress);
+        });
+
+        updater.on('update-downloaded', (info: UpdateInfo) => {
+            logger.log(`Update downloaded: ${info.version}`);
+
+            // Show native badge and tray tooltip
+            this.badgeManager?.showUpdateBadge();
+            this.trayManager?.setUpdateTooltip(info.version);
+
+            this.broadcastToWindows(IPC_CHANNELS.AUTO_UPDATE_DOWNLOADED, info);
+        });
+    }
+
+    /**
+     * Broadcast an event to all renderer windows.
+     * @param channel - IPC channel name
+     * @param data - Data to send
+     */
+    private broadcastToWindows(channel: string, data: unknown): void {
+        const windows = BrowserWindow.getAllWindows();
+        for (const win of windows) {
+            if (!win.isDestroyed()) {
+                try {
+                    win.webContents.send(channel, data);
+                } catch (error) {
+                    logger.warn(`Failed to send ${channel} to window:`, error);
+                }
+            }
+        }
+    }
+
+    private normalizeVersion(version: string): string | null {
+        const trimmed = version.trim();
+        if (!trimmed) return null;
+        const cleaned = trimmed.startsWith('v') ? trimmed.slice(1) : trimmed;
+        const parsed = valid(cleaned);
+        if (parsed) {
+            return parsed;
+        }
+
+        const coerced = coerce(cleaned)?.version ?? null;
+        if (!coerced) {
+            logger.warn(`Unable to parse version string: ${version}`);
+        }
+        return coerced;
+    }
+
+    private isNewerVersion(versionA: string | null, versionB: string | null): boolean {
+        if (!versionA || !versionB) {
+            if (versionA && !versionB) {
+                logger.warn('Unable to compare versions (missing current version)', { versionA, versionB });
+            }
+            return false;
+        }
+
+        return compare(versionA, versionB) > 0;
+    }
+
+    // =========================================================================
+    // Dev Testing Methods (only for manual testing in development)
+    // =========================================================================
+
+    private mockPlatform: NodeJS.Platform | null = null;
+    private mockEnv: Record<string, string> | null = null;
+
+    /**
+     * Show the update badge for dev testing.
+     * This allows testing the native badge without a real update.
+     * @param version - Optional version string for tray tooltip
+     */
+    devShowBadge(version: string = '2.0.0-test'): void {
+        logger.log('[DEV] Showing test update badge');
+        this.badgeManager?.showUpdateBadge();
+        this.trayManager?.setUpdateTooltip(version);
+    }
+
+    /**
+     * Clear the update badge for dev testing.
+     */
+    devClearBadge(): void {
+        logger.log('[DEV] Clearing test update badge');
+        this.badgeManager?.clearUpdateBadge();
+        this.trayManager?.clearUpdateTooltip();
+    }
+
+    /**
+     * Mock the platform for testing logic.
+     */
+    devMockPlatform(platform: NodeJS.Platform | null): void {
+        this.mockPlatform = platform;
+        this.devReevaluate();
+    }
+
+    /**
+     * Mock env vars for testing logic.
+     */
+    devMockEnv(env: Record<string, string> | null): void {
+        this.mockEnv = env;
+        this.devReevaluate();
+    }
+
+    /**
+     * Emit a simulated update event.
+     */
+    devEmitUpdateEvent(event: string, data: unknown): void {
+        logger.log(`[DEV] Emitting mock event: ${event}`);
+        if (event === 'error') {
+            // MASKED ERROR: Do NOT send the raw error message to the renderer/user.
+            // Raw errors from electron-updater can be massive (HTML, full stack traces) and
+            // cause UI rendering issues (toasts going off-screen).
+            // We log the real error above for debugging, but tell the user a generic message.
+            this.broadcastToWindows(
+                IPC_CHANNELS.AUTO_UPDATE_ERROR,
+                'The auto-update service encountered an error. Please try again later.'
+            );
+        } else if (event === 'checking-for-update') {
+            this.broadcastToWindows(IPC_CHANNELS.AUTO_UPDATE_CHECKING, null);
+        } else {
+            // Map update events to their corresponding IPC channels
+            const eventChannelMap: Record<string, string> = {
+                'update-available': IPC_CHANNELS.AUTO_UPDATE_AVAILABLE,
+                'manual-update-available': IPC_CHANNELS.AUTO_UPDATE_MANUAL_UPDATE_AVAILABLE,
+                'update-not-available': IPC_CHANNELS.AUTO_UPDATE_NOT_AVAILABLE,
+                'update-downloaded': IPC_CHANNELS.AUTO_UPDATE_DOWNLOADED,
+                'update-error': IPC_CHANNELS.AUTO_UPDATE_ERROR,
+                error: IPC_CHANNELS.AUTO_UPDATE_ERROR,
+                'download-progress': IPC_CHANNELS.AUTO_UPDATE_DOWNLOAD_PROGRESS,
+            };
+            const channel = eventChannelMap[event];
+            if (channel) {
+                const payload =
+                    event === 'update-downloaded'
+                        ? {
+                              version:
+                                  typeof data === 'object' && data !== null && 'version' in data
+                                      ? String((data as { version: string }).version)
+                                      : '',
+                          }
+                        : data;
+                setImmediate(() => {
+                    this.broadcastToWindows(channel, payload);
+                });
+            } else {
+                setImmediate(() => {
+                    this.broadcastToWindows(`auto-update:${event}`, data);
+                });
+            }
+        }
+
+        // Also update internal state if needed
+        if (event === 'update-downloaded') {
+            this.badgeManager?.showUpdateBadge();
+            const tooltipVersion =
+                typeof data === 'object' && data !== null && 'version' in data
+                    ? String((data as { version: string }).version)
+                    : '';
+            this.trayManager?.setUpdateTooltip(tooltipVersion || '');
+        }
+    }
+
+    /**
+     * Re-evaluate enabled state based on current (potentially mocked) platform/env.
+     */
+    private devReevaluate(): void {
+        const updatesDisabled = this.shouldDisableUpdates();
+        const platformAdapter = this.getAdapterForUpdateChecks(this.mockPlatform || process.platform);
+        this.manualUpdateOnly = !platformAdapter.supportsAutoUpdate(this.mockEnv || process.env);
+
+        if (updatesDisabled && !this.manualUpdateOnly) {
+            this.enabled = false;
+            return;
+        }
+
+        if (this.manualUpdateOnly) {
+            this.enabled = this.settings.get('autoUpdateEnabled') ?? true;
+            return;
+        }
+
+        this.enabled = this.settings.get('autoUpdateEnabled') ?? true;
+    }
+
+    private async checkGitHubForLatestRelease(): Promise<UpdateInfo | null> {
+        const response = await net.fetch('https://api.github.com/repos/bwendell/gemini-desktop/releases/latest', {
+            headers: { 'User-Agent': 'gemini-desktop-updater' },
+        });
+
+        if (!response.ok) {
+            logger.warn(`GitHub API returned ${response.status}`);
+            throw new Error('GITHUB_API_RESPONSE_NOT_OK');
+        }
+
+        const release = (await response.json()) as unknown;
+        const tagName = this.getGitHubReleaseField(release, 'tag_name');
+        const releaseName = this.getGitHubReleaseField(release, 'name');
+        const releaseNotes = this.getGitHubReleaseField(release, 'body');
+        const latestVersion = this.normalizeVersion(tagName || '');
+        const currentVersion = this.normalizeVersion(app.getVersion());
+
+        if (!latestVersion) {
+            return null;
+        }
+
+        if (this.isNewerVersion(latestVersion, currentVersion)) {
+            return {
+                version: latestVersion,
+                releaseName: releaseName || undefined,
+                releaseNotes: releaseNotes || undefined,
+                files: [],
+                path: '',
+                sha512: '',
+                releaseDate: '',
+            };
+        }
+
+        return null;
+    }
+
+    private getGitHubReleaseField(release: unknown, field: 'tag_name' | 'name' | 'body'): string | undefined {
+        if (!release || typeof release !== 'object') {
+            return undefined;
+        }
+
+        const value = (release as Record<string, unknown>)[field];
+        return typeof value === 'string' ? value : undefined;
+    }
+
+    /**
+     * Clean up resources when the manager is destroyed.
+     */
+    destroy(): void {
+        this.stopPeriodicChecks();
+        // Only remove listeners if autoUpdater was initialized
+        if (this.autoUpdater) {
+            this.autoUpdater.removeAllListeners();
+        }
+        logger.log('UpdateManager destroyed');
+    }
+}
