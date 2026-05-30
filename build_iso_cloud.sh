@@ -5,8 +5,7 @@
 set -e
 
 # Configuration
-ISO_URL="https://mirrors.dotsrc.org/kali-images/kali-2026.1/kali-linux-2026.1-live-amd64.iso"
-ISO_NAME="kali-linux-2026.1-live-amd64.iso"
+ISO_NAME="kali-linux-latest.iso"
 STAGING_DIR="/home/runner/staging"
 CHROOT_DIR="/home/runner/chroot"
 OUTPUT_ISO="kali-linux-2026.1-ai-supreme.iso"
@@ -16,27 +15,27 @@ TOOLS_SOURCE="/home/runner/work/ai-supreme-iso-builder/ai-supreme-iso-builder"
 ADMIN_USER="Creator"
 ADMIN_PASS="@11646"
 
-echo "[*] Downloading Kali ISO (with mirror fallback)..."
-# Try primary, then fallback mirrors
+echo "[*] Downloading Kali ISO (with intelligent mirror probing)..."
 URLS=(
-    "https://cdimage.kali.org/kali-2026.1/kali-linux-2026.1-live-amd64.iso"
-    "https://mirror.us.leaseweb.net/kali-images/kali-2026.1/kali-linux-2026.1-live-amd64.iso"
     "https://mirrors.dotsrc.org/kali-images/kali-2026.1/kali-linux-2026.1-live-amd64.iso"
+    "https://mirror.us.leaseweb.net/kali-images/kali-2026.1/kali-linux-2026.1-live-amd64.iso"
+    "https://mirrors.dotsrc.org/kali-images/kali-2026.1/kali-linux-2026.1-installer-amd64.iso"
 )
 
 DOWNLOADED=false
 for url in "${URLS[@]}"; do
-    echo "[*] Attempting: $url"
-    if wget -c --retry-connrefused --tries=3 --timeout=15 "$url" -O "$ISO_NAME"; then
+    echo "[*] Probing: $url"
+    if wget -c --retry-connrefused --tries=2 --timeout=10 "$url" -O "$ISO_NAME"; then
         if [ -s "$ISO_NAME" ]; then
             DOWNLOADED=true
+            echo "[+] Download successful from $url"
             break
         fi
     fi
 done
 
 if [ "$DOWNLOADED" = false ]; then
-    echo "[!] Failed to download Kali ISO from all mirrors."
+    echo "[!] Critical Error: Could not retrieve any Kali ISO base."
     exit 1
 fi
 
@@ -46,8 +45,24 @@ mkdir -p "$STAGING_DIR" "$CHROOT_DIR"
 echo "[*] Extracting Kali ISO..."
 xorriso -osirrox on -indev "$ISO_NAME" -extract / "$STAGING_DIR"
 
-echo "[*] Unsquashing root filesystem..."
-sudo unsquashfs -d "$CHROOT_DIR" "$STAGING_DIR/live/filesystem.squashfs"
+echo "[*] Locating root filesystem..."
+SQUASH_PATH=""
+if [ -f "$STAGING_DIR/live/filesystem.squashfs" ]; then
+    SQUASH_PATH="$STAGING_DIR/live/filesystem.squashfs"
+elif [ -f "$STAGING_DIR/install/filesystem.squashfs" ]; then
+    SQUASH_PATH="$STAGING_DIR/install/filesystem.squashfs"
+else
+    # Search for any squashfs
+    SQUASH_PATH=$(find "$STAGING_DIR" -name "*.squashfs" | head -n 1)
+fi
+
+if [ -z "$SQUASH_PATH" ]; then
+    echo "[!] Error: Could not find SquashFS in ISO."
+    exit 1
+fi
+
+echo "[*] Unsquashing root filesystem ($SQUASH_PATH)..."
+sudo unsquashfs -d "$CHROOT_DIR" "$SQUASH_PATH"
 
 echo "[*] Preparing Chroot..."
 sudo mount --bind /proc "$CHROOT_DIR/proc"
