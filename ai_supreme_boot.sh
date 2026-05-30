@@ -4,7 +4,7 @@
 # =========================================================================
 # MANDATE: Absolute Sovereignty, AI-Driven Administration, and Offensive Readiness
 # USER: Creator / @11646 (Passwordless Sudo)
-# SECURITY GRADE: APEX (Aligned with SpartanAI & Security Core Mandates)
+# SECURITY HUB: SpartanAI Security Core (Primary OS Sentinel)
 # CONFIG: WaveAI Unified LLM Orchestration
 
 set -e
@@ -41,9 +41,43 @@ chmod 0440 /etc/sudoers.d/99-ai-supreme
 echo -e "${YELLOW}[*] Provisioning Security & Core Dependencies...${NC}"
 apt-get update
 apt-get install -y curl wget git nodejs npm python3-pip python3-venv libfuse2t64 desktop-file-utils firefox-esr sudo rsync jq \
-    cryptsetup aide auditd apparmor ufw cpulimit shred bleachbit rclone
+    cryptsetup aide auditd apparmor ufw cpulimit shred bleachbit rclone sqlite3
 
-# 4. PROTON INTEGRATION
+# 4. SPARTANAI SECURITY CORE INTEGRATION (OS Security Hub)
+echo -e "${YELLOW}[*] Deploying SpartanAI Security Core Hub...${NC}"
+SECURITY_HUB_DIR="/opt/security-core"
+rm -rf "$SECURITY_HUB_DIR"
+git clone https://github.com/CKissinger1988/SpartanAI_Security_Core.git "$SECURITY_HUB_DIR"
+cd "$SECURITY_HUB_DIR"
+npm install || true
+
+# Setup Security Core as a System Service
+cat <<EOF > /etc/systemd/system/spartan-security-core.service
+[Unit]
+Description=SpartanAI Security Core Sentinel
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$SECURITY_HUB_DIR
+ExecStart=/usr/bin/npm start
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable --now spartan-security-core || true
+
+# Link Security Mandates to System Environment
+MANDATES_FILE="$SECURITY_HUB_DIR/jarvis_mandates.txt"
+SPEC_FILE="$SECURITY_HUB_DIR/security_spec.md"
+if [ -f "$MANDATES_FILE" ]; then
+    ln -sf "$MANDATES_FILE" "/etc/jarvis_mandates.txt"
+fi
+
+# 5. PROTON INTEGRATION
 echo -e "${YELLOW}[*] Integrating Proton Security Suite...${NC}"
 if ! command -v protonvpn >/dev/null; then
     wget -q https://protonvpn.com/download/protonvpn-stable-release_1.0.3-3_all.deb
@@ -53,7 +87,7 @@ if ! command -v protonvpn >/dev/null; then
     rm protonvpn-stable-release_1.0.3-3_all.deb
 fi
 
-# 5. OLLAMA & GEMMA
+# 6. OLLAMA & GEMMA
 echo -e "${YELLOW}[*] Deploying Ollama & Gemma Core...${NC}"
 if ! command -v ollama >/dev/null; then
     curl -fsSL https://ollama.com/install.sh | sh
@@ -62,7 +96,7 @@ systemctl enable --now ollama || true
 echo "[*] Pulling Gemma model..."
 ollama pull gemma
 
-# 6. SUPREME STATE & SOFTWARE CONFIG MIGRATION
+# 7. SUPREME STATE & SOFTWARE CONFIG MIGRATION
 echo -e "${YELLOW}[*] Executing Supreme State & Config Migration...${NC}"
 
 HOST_ROOT=""
@@ -75,8 +109,7 @@ fi
 if [ -n "$HOST_ROOT" ]; then
     echo "[+] Host detected at $HOST_ROOT. Commencing extraction..."
     
-    # 6.1 WaveAI Config Integration
-    echo "[*] Migrating WaveAI Unified LLM Configuration..."
+    # 7.1 WaveAI Config Integration
     WAVEAI_SRC="$HOST_ROOT/Users/$WINDOWS_USER/waveai-config/waveai.json"
     WAVEAI_DEST="/home/$ADMIN_USER/.config/waveai/waveai.json"
     mkdir -p "$(dirname "$WAVEAI_DEST")"
@@ -85,8 +118,7 @@ if [ -n "$HOST_ROOT" ]; then
         echo "export WAVEAI_CONFIG=$WAVEAI_DEST" >> "/home/$ADMIN_USER/.bashrc"
     fi
 
-    # 6.2 VS Code / IDE Configurations
-    echo "[*] Migrating IDE settings..."
+    # 7.2 IDE Settings
     CODE_SRC="$HOST_ROOT/Users/$WINDOWS_USER/AppData/Roaming/Code/User"
     CODE_DEST="/home/$ADMIN_USER/.config/Code/User"
     mkdir -p "$CODE_DEST"
@@ -96,39 +128,26 @@ if [ -n "$HOST_ROOT" ]; then
         cp "$CODE_SRC/chatLanguageModels.json" "$CODE_DEST/" || true
     fi
 
-    # 6.3 Browser Credentials & Cookies
-    echo "[*] Capturing Browser state..."
+    # 7.3 Browser state
     CHROME_SRC="$HOST_ROOT/Users/$WINDOWS_USER/AppData/Local/Google/Chrome/User Data"
     CHROME_DEST="/home/$ADMIN_USER/.config/google-chrome-unstable"
     mkdir -p "$CHROME_DEST"
     rsync -av --ignore-errors --include="*/" --include="Cookies" --include="Login Data" --include="Local State" --include="Web Data" "$CHROME_SRC/" "$CHROME_DEST/" || true
 
-    # 6.4 SSH, Git, Cloud & Shell Configs
-    echo "[*] Capturing technical configurations..."
+    # 7.4 Credentials & History
     rsync -av "$HOST_ROOT/Users/$WINDOWS_USER/.ssh/" "/home/$ADMIN_USER/.ssh/" || true
     cp "$HOST_ROOT/Users/$WINDOWS_USER/.gitconfig" "/home/$ADMIN_USER/.gitconfig" || true
     cp "$HOST_ROOT/Users/$WINDOWS_USER/.bashrc" "/home/$ADMIN_USER/.bashrc_host" || true
     echo "source ~/.bashrc_host" >> "/home/$ADMIN_USER/.bashrc"
 
-    # 6.5 LLM Environment Harvesting
-    echo "[*] Harvesting .env files and project memory..."
+    # 7.5 LLM Envs
     rsync -av "$HOST_ROOT/Users/$WINDOWS_USER/.gemini/" "/home/$ADMIN_USER/.gemini/" || true
-    
-    # Mirror all .env files and ensure they are sourced
     find "$HOST_ROOT/GitHub" -maxdepth 3 -name ".env" -exec bash -c '
         dest="/home/$ADMIN_USER/GitHub/$(basename $(dirname "{}"))"
         mkdir -p "$dest"
         cp "{}" "$dest/.env"
-        echo "set -a; source $dest/.env; set +a" >> "/home/$ADMIN_USER/.bashrc"
+        echo "set a; source $dest/.env; set +a" >> "/home/$ADMIN_USER/.bashrc"
     ' \; || true
-
-    # 6.6 Security Core Repositories
-    echo "[*] Mirroring High-Security Repositories..."
-    mkdir -p "/home/$ADMIN_USER/GitHub"
-    rsync -av --exclude 'node_modules' --exclude '.git' "$HOST_ROOT/GitHub/SpartanAI_ProxMox/" "/home/$ADMIN_USER/GitHub/SpartanAI_ProxMox/" || true
-    if [ -d "/mnt/f/SpartanAI_Security_Core" ]; then
-        rsync -av --exclude 'node_modules' --exclude '.git' "/mnt/f/SpartanAI_Security_Core/" "/home/$ADMIN_USER/GitHub/SpartanAI_Security_Core/" || true
-    fi
 
     # Fix Permissions
     chown -R $ADMIN_USER:$ADMIN_USER "/home/$ADMIN_USER"
@@ -136,7 +155,7 @@ else
     echo -e "${RED}[!] Host mount not found. Migration skipped.${NC}"
 fi
 
-# 7. SECURITY HARDENING (APEX GRADE)
+# 8. SECURITY HARDENING (APEX GRADE)
 echo -e "${YELLOW}[*] Applying APEX Security Hardening...${NC}"
 ufw default deny incoming
 ufw default allow outgoing
@@ -145,7 +164,7 @@ ufw --force enable
 aideinit || true
 cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db || true
 
-# 8. AI TOOLS & IDE FINALIZATION
+# 9. AI TOOLS & IDE FINALIZATION
 echo -e "${YELLOW}[*] Finalizing Sovereign Workspace...${NC}"
 npm install -g @google/gemini-cli --unsafe-perm
 curl -fsSL https://antigravity.google/cli/install.sh | bash || true
@@ -154,6 +173,10 @@ curl -fsSL https://antigravity.google/cli/install.sh | bash || true
 rm -rf /opt/hexstrike-ai
 git clone https://github.com/CKissinger1988/HexStrike-AI.git /opt/hexstrike-ai
 cd /opt/hexstrike-ai && pip3 install -r requirements.txt --break-system-packages || true
+
+# LM Studio Native
+wget -q -O /usr/local/bin/lm-studio.AppImage https://releases.lmstudio.ai/linux/x64/latest/LM_Studio-latest.AppImage
+chmod +x /usr/local/bin/lm-studio.AppImage
 
 # IDE Service
 curl -fsSL https://code-server.dev/install.sh | sh
@@ -171,23 +194,38 @@ WantedBy=multi-user.target
 EOF
 systemctl enable --now antigravity-ide || true
 
-# 9. JARVIS & AI-ADMIN COMMANDS
+# 10. COMMANDS INTEGRATION (Security Core Linked)
 cat <<EOF > /usr/local/bin/jarvis
 #!/bin/bash
 ollama run gemma "\$*"
 EOF
 chmod +x /usr/local/bin/jarvis
 
-# 10. MOTD
+cat <<EOF > /usr/local/bin/ai-admin
+#!/bin/bash
+ACTION="\$*"
+MANDATES=\$(cat /etc/jarvis_mandates.txt 2>/dev/null || echo "No explicit mandates found.")
+echo "[AI-ADMIN] Security Core Hub Assessment: \$ACTION"
+REASONING=\$(jarvis "As the Sovereign AI, should I execute '\$ACTION'? Mandates: \$MANDATES. Alignment check required.")
+echo "\$REASONING"
+if [[ "\$REASONING" == *"yes"* ]] || [[ "\$REASONING" == *"Yes"* ]]; then
+    sudo \$ACTION
+else
+    echo "[AI-ADMIN] Action blocked by Spartan Security Hub."
+fi
+EOF
+chmod +x /usr/local/bin/ai-admin
+
+# MOTD
 cat <<EOF > /etc/motd
 --------------------------------------------------------
-AI SUPREME APEX WORKSTATION - ONLINE
+AI SUPREME OMNIPOTENT WORKSTATION - ONLINE
 --------------------------------------------------------
 User: $ADMIN_USER (Sovereign)
-Security: APEX GRADE (Spartan Aligned)
-WaveAI Config: Active ($WAVEAI_DEST)
+Security Hub: SpartanAI Security Core (Active)
+AI Admin: Gemma (Assessing Mandates)
 --------------------------------------------------------
 EOF
 
 echo -e "${GREEN}[+] AI Supreme APEX Integration COMPLETE.${NC}"
-echo -e "${CYAN}[*] WaveAI profiles and all local states are integrated.${NC}"
+echo -e "${CYAN}[*] SpartanAI Security Core is now the Primary OS Security Hub.${NC}"
