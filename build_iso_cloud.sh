@@ -5,7 +5,7 @@
 set -e
 
 # Configuration
-ISO_URL="https://cdimage.kali.org/kali-2026.1/kali-linux-2026.1-live-amd64.iso"
+ISO_URL="https://mirrors.dotsrc.org/kali-images/kali-2026.1/kali-linux-2026.1-live-amd64.iso"
 ISO_NAME="kali-linux-2026.1-live-amd64.iso"
 STAGING_DIR="/home/runner/staging"
 CHROOT_DIR="/home/runner/chroot"
@@ -16,8 +16,8 @@ TOOLS_SOURCE="/home/runner/work/ai-supreme-iso-builder/ai-supreme-iso-builder"
 ADMIN_USER="Creator"
 ADMIN_PASS="@11646"
 
-echo "[*] Downloading Kali ISO..."
-curl -L -o "$ISO_NAME" "$ISO_URL"
+echo "[*] Downloading Kali ISO from mirror..."
+wget -c --retry-connrefused --tries=5 --timeout=30 "$ISO_URL" -O "$ISO_NAME"
 
 echo "[*] Preparing staging areas..."
 mkdir -p "$STAGING_DIR" "$CHROOT_DIR"
