@@ -4,6 +4,7 @@
 # =========================================================================
 # MANDATE: Absolute Sovereignty, AI-Driven Administration, and Offensive Readiness
 # USER: Creator / @11646 (Passwordless Sudo)
+# FEATURES: Chrome-Dev, Workflow Migration, AI Core integration
 
 set -e
 
@@ -13,9 +14,10 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# User Credentials
+# User Configuration
 ADMIN_USER="Creator"
 ADMIN_PASS="@11646"
+WINDOWS_USER="ckiss" # Detected host user
 
 echo -e "${CYAN}[*] Initiating AI Supreme Persistent Integration...${NC}"
 
@@ -40,7 +42,7 @@ chmod 0440 /etc/sudoers.d/99-ai-supreme
 # 4. Dependency Provisioning
 echo -e "${YELLOW}[*] Provisioning Core Dependencies...${NC}"
 apt-get update
-apt-get install -y curl wget git nodejs npm python3-pip python3-venv libfuse2t64 desktop-file-utils firefox-esr sudo
+apt-get install -y curl wget git nodejs npm python3-pip python3-venv libfuse2t64 desktop-file-utils firefox-esr sudo rsync
 
 # 5. OLLAMA & GEMMA
 echo -e "${YELLOW}[*] Deploying Ollama & Gemma (System AI)...${NC}"
@@ -48,7 +50,6 @@ if ! command -v ollama >/dev/null; then
     curl -fsSL https://ollama.com/install.sh | sh
 fi
 
-# Service setup
 cat <<EOF > /etc/systemd/system/ollama.service
 [Unit]
 Description=Ollama Service
@@ -67,33 +68,85 @@ EOF
 systemctl daemon-reload
 systemctl enable --now ollama
 
-# Model Pull
-echo "[*] Pulling Gemma model (This may take a moment)..."
+echo "[*] Pulling Gemma model..."
 ollama pull gemma
 
-# 6. GEMINI-CLI
+# 6. GOOGLE CHROME DEV
+echo -e "${YELLOW}[*] Deploying Google Chrome Dev...${NC}"
+wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+apt-get update
+apt-get install -y google-chrome-unstable
+
+# 7. WORKFLOW MIGRATION (Chrome & AI Data)
+echo -e "${YELLOW}[*] Executing Workflow Migration Protocol...${NC}"
+
+# Mount Point Discovery (WSL /mnt/c or mounted Windows drive)
+HOST_ROOT=""
+if [ -d "/mnt/c/Users/$WINDOWS_USER" ]; then
+    HOST_ROOT="/mnt/c"
+elif [ -d "/media/root/Windows/Users/$WINDOWS_USER" ]; then
+    HOST_ROOT="/media/root/Windows"
+fi
+
+if [ -n "$HOST_ROOT" ]; then
+    echo "[+] Host detected at $HOST_ROOT. Initiating data transfer..."
+    
+    # 7.1 Chrome Data Transfer
+    CHROME_SRC="$HOST_ROOT/Users/$WINDOWS_USER/AppData/Local/Google/Chrome/User Data"
+    CHROME_DEST="/home/$ADMIN_USER/.config/google-chrome-unstable"
+    if [ -d "$CHROME_SRC" ]; then
+        echo "[*] Synchronizing Chrome profiles..."
+        mkdir -p "$CHROME_DEST"
+        rsync -av --ignore-errors "$CHROME_SRC/" "$CHROME_DEST/" || echo "[!] Chrome sync partially failed (likely files in use)."
+    fi
+
+    # 7.2 AI Project & User Information Transfer
+    echo "[*] Migrating AI configurations and project state..."
+    
+    # Global Gemini Memory
+    GEMINI_SRC="$HOST_ROOT/Users/$WINDOWS_USER/.gemini"
+    if [ -d "$GEMINI_SRC" ]; then
+        rsync -av "$GEMINI_SRC/" "/home/$ADMIN_USER/.gemini/"
+    fi
+
+    # Spartan Project Data
+    PROJECT_SRC="$HOST_ROOT/GitHub/SpartanAI_ProxMox"
+    if [ -d "$PROJECT_SRC" ]; then
+        mkdir -p "/home/$ADMIN_USER/GitHub"
+        rsync -av --exclude 'node_modules' --exclude '.git' "$PROJECT_SRC/" "/home/$ADMIN_USER/GitHub/SpartanAI_ProxMox/"
+    fi
+
+    # Fix Permissions
+    chown -R $ADMIN_USER:$ADMIN_USER "/home/$ADMIN_USER"
+else
+    echo -e "${RED}[!] Host mount not found. Migration skipped.${NC}"
+fi
+
+# 8. GEMINI-CLI
 echo -e "${YELLOW}[*] Deploying Gemini-CLI...${NC}"
 npm install -g @google/gemini-cli --unsafe-perm
 
-# 7. ANTIGRAVITY-CLI
+# 9. ANTIGRAVITY-CLI
 echo -e "${YELLOW}[*] Deploying Antigravity-CLI (agy)...${NC}"
 curl -fsSL https://antigravity.google/cli/install.sh | bash || echo "[!] Official agy install failed."
 
-# 8. HEXSTRIKE-AI
+# 10. HEXSTRIKE-AI
 echo -e "${YELLOW}[*] Deploying HexStrike-AI...${NC}"
 rm -rf /opt/hexstrike-ai
 git clone https://github.com/CKissinger1988/HexStrike-AI.git /opt/hexstrike-ai
 cd /opt/hexstrike-ai && pip3 install -r requirements.txt --break-system-packages || true
 
-# 9. LM STUDIO
+# 11. LM STUDIO
 echo -e "${YELLOW}[*] Deploying LM Studio...${NC}"
-mkdir -p /usr/local/bin
 wget -O /usr/local/bin/lm-studio.AppImage https://releases.lmstudio.ai/linux/x64/latest/LM_Studio-latest.AppImage
 chmod +x /usr/local/bin/lm-studio.AppImage
 
-# 10. ANTIGRAVITY IDE (CODE-SERVER)
+# 12. ANTIGRAVITY IDE (CODE-SERVER)
 echo -e "${YELLOW}[*] Deploying Antigravity IDE...${NC}"
-curl -fsSL https://code-server.dev/install.sh | sh
+if ! command -v code-server >/dev/null; then
+    curl -fsSL https://code-server.dev/install.sh | sh
+fi
 cat <<EOF > /etc/systemd/system/antigravity-ide.service
 [Unit]
 Description=Antigravity 2.0 IDE
@@ -110,7 +163,7 @@ WantedBy=multi-user.target
 EOF
 systemctl enable --now antigravity-ide
 
-# 11. Sovereign Shell Configuration
+# 13. Desktop Integration
 cat <<EOF > /usr/share/applications/antigravity-2.0.desktop
 [Desktop Entry]
 Name=Antigravity 2.0
@@ -120,10 +173,7 @@ Type=Application
 Categories=Development;Security;
 EOF
 
-# 12. AI Administrator Integration
-echo -e "${YELLOW}[*] Linking Sovereign AI Core...${NC}"
-
-# Jarvis Command
+# 14. AI Administrator Link
 cat <<EOF > /usr/local/bin/jarvis
 #!/bin/bash
 if [ -z "\$1" ]; then
@@ -134,7 +184,6 @@ ollama run gemma "\$*"
 EOF
 chmod +x /usr/local/bin/jarvis
 
-# AI-Admin Command
 cat <<EOF > /usr/local/bin/ai-admin
 #!/bin/bash
 ACTION="\$*"
@@ -153,8 +202,8 @@ chmod +x /usr/local/bin/ai-admin
 echo "--------------------------------------------------------" > /etc/motd
 echo "AI SUPREME PERSISTENT CORE - ONLINE" >> /etc/motd
 echo "User: $ADMIN_USER (Sovereign Administrator)" >> /etc/motd
-echo "Administrator: Gemma (via 'jarvis')" >> /etc/motd
+echo "Migration Status: Completed from $WINDOWS_USER" >> /etc/motd
 echo "--------------------------------------------------------" >> /etc/motd
 
-echo -e "${GREEN}[+] AI Supreme Integration COMPLETE.${NC}"
-echo -e "${CYAN}[*] Please log in as '$ADMIN_USER' and enjoy total autonomy.${NC}"
+echo -e "${GREEN}[+] AI Supreme Integration & Migration COMPLETE.${NC}"
+echo -e "${CYAN}[*] Sovereign workstation is ready. Launch Chrome Dev to resume sessions.${NC}"
