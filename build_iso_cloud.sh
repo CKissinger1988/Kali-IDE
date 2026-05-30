@@ -15,23 +15,37 @@ TOOLS_SOURCE="/home/runner/work/ai-supreme-iso-builder/ai-supreme-iso-builder"
 ADMIN_USER="Creator"
 ADMIN_PASS="@11646"
 
-echo "[*] Downloading Kali ISO (with intelligent mirror probing)..."
-URLS=(
-    "https://mirrors.dotsrc.org/kali-images/kali-2026.1/kali-linux-2026.1-live-amd64.iso"
-    "https://mirror.us.leaseweb.net/kali-images/kali-2026.1/kali-linux-2026.1-live-amd64.iso"
-    "https://mirrors.dotsrc.org/kali-images/kali-2026.1/kali-linux-2026.1-installer-amd64.iso"
+echo "[*] Downloading Kali ISO (High-Speed Multi-Connection)..."
+# Intelligent Mirror Selection & Probing
+BASE_URLS=(
+    "https://mirrors.dotsrc.org/kali-images/kali-2026.1/"
+    "https://mirror.us.leaseweb.net/kali-images/kali-2026.1/"
+    "https://kali.mirror.garr.it/kali-images/kali-2026.1/"
+    "https://mirrors.netix.net/kali-images/kali-2026.1/"
+)
+
+# Potential Filenames (Live preferred, then Installer)
+FILENAMES=(
+    "kali-linux-2026.1-live-amd64.iso"
+    "kali-linux-2026.1-installer-amd64.iso"
 )
 
 DOWNLOADED=false
-for url in "${URLS[@]}"; do
-    echo "[*] Probing: $url"
-    if wget -c --retry-connrefused --tries=2 --timeout=10 "$url" -O "$ISO_NAME"; then
-        if [ -s "$ISO_NAME" ]; then
-            DOWNLOADED=true
-            echo "[+] Download successful from $url"
-            break
+for base in "${BASE_URLS[@]}"; do
+    for name in "${FILENAMES[@]}"; do
+        FULL_URL="${base}${name}"
+        echo "[*] Probing: $FULL_URL"
+        # Quick header check to see if file exists
+        if curl --output /dev/null --silent --head --fail "$FULL_URL"; then
+            echo "[+] Found! Initiating multi-connection download..."
+            if aria2c -x 16 -s 16 -j 16 --allow-overwrite=true --auto-file-renaming=false "$FULL_URL" -o "$ISO_NAME"; then
+                if [ -s "$ISO_NAME" ]; then
+                    DOWNLOADED=true
+                    break 2
+                fi
+            fi
         fi
-    fi
+    done
 done
 
 if [ "$DOWNLOADED" = false ]; then
