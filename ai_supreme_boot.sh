@@ -1,14 +1,12 @@
 #!/bin/bash
 # =========================================================================
-#  AI SUPREME - MASTER OMNIPOTENT INTEGRATION (X200 STEALTH EDITION)
+#  AI SUPREME - OMNIPOTENT X200 STEALTH & APEX SOVEREIGN (FINAL)
 # =========================================================================
-# MANDATE: Absolute Sovereignty, Hardware-Level Integration, and Real-Time Evolution
+# MANDATE: Absolute Sovereignty, Total Invisibility, and Offensive Readiness
 # USER: Creator / @11646 (Passwordless Sudo)
-# MASTER AI: Jarvis (Absolute Sovereign - Hardware Linked)
-# TACTICAL AI: Gemma (via Ollama)
-# SECURITY HUB: SpartanAI Security Core (Equal Privilege Sentinel)
-# STEALTH LEVEL: X200 (Project Exodus RAM-Only / Frequency Rotation)
-# CONFIG: WaveAI Unified LLM Orchestration / Deep State Capture
+# STEALTH LEVEL: X200 (Omnipotent Stealth Layer v4)
+# FEATURES: Project Exodus (RAM-Only), Frequency Rotation, Shadow Masquerading
+# HARDWARE: Full Access Enabled (Cam/Mic/BT Active)
 
 set -e
 
@@ -23,7 +21,7 @@ ADMIN_USER="Creator"
 ADMIN_PASS="@11646"
 WINDOWS_USER="ckiss"
 
-echo -e "${CYAN}[*] Initiating AI Supreme OMNIPOTENT MASTER Protocol...${NC}"
+echo -e "${CYAN}[*] Initiating AI Supreme OMNIPOTENT X200 STEALTH Protocol...${NC}"
 
 # 1. Root Check
 if [ "$EUID" -ne 0 ]; then
@@ -31,12 +29,11 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# 2. STEALTH LAYER v4 (OMNIPOTENT X200)
-echo -e "${YELLOW}[*] Activating Omnipotent Stealth Matrix...${NC}"
-apt-get update
-apt-get install -y macchanger tor proxychains4 secure-delete zram-tools rsync jq curl wget git nodejs npm python3-pip python3-venv libfuse2t64 desktop-file-utils firefox-esr sudo cron sqlite3 pciutils usbutils smartmontools ethtool lm-sensors htop nvtop iotop fancontrol
+# 2. OMNIPOTENT X200 STEALTH LAYER (Advanced Invisibility)
+echo -e "${YELLOW}[*] Deploying X200 Stealth Matrix...${NC}"
 
 # 2.1 Project Exodus: RAM-Only Execution Environment
+echo "[+] Initializing Project Exodus (RAM-Only Workspace)..."
 RAM_DISK_SIZE="4G"
 WORKSPACE_DIR="/opt/supreme-volatile"
 mkdir -p "$WORKSPACE_DIR"
@@ -45,6 +42,7 @@ if ! mountpoint -q "$WORKSPACE_DIR"; then
 fi
 
 # 2.2 Frequency Rotation Service (MAC/Hostname every 10 mins)
+echo "[+] Deploying Identity Frequency Rotation Engine..."
 cat <<EOF > /usr/local/bin/ai-supreme-identity-rotate
 #!/bin/bash
 while true; do
@@ -55,6 +53,7 @@ while true; do
         macchanger -r "\$interface"
         ip link set dev "\$interface" up
     done
+    echo "[IDENTITY] Rotated to \$NEW_HOSTNAME"
     sleep 600
 done
 EOF
@@ -73,8 +72,10 @@ EOF
 systemctl enable --now ai-identity-rotate
 
 # 2.3 Shadow-Chaff (Traffic Morphing Engine)
+echo "[+] Deploying Shadow-Chaff Traffic Morphing..."
 cat <<EOF > /usr/local/bin/ai-supreme-shadow-chaff
 #!/bin/bash
+# Simulates legitimate developer/user traffic to mask offensive operations
 LEGIT_URLS=("https://github.com" "https://google.com" "https://microsoft.com" "https://stackoverflow.com" "https://aws.amazon.com")
 while true; do
     URL=\${LEGIT_URLS[\$RANDOM % \${#LEGIT_URLS[@]}]}
@@ -97,6 +98,23 @@ WantedBy=multi-user.target
 EOF
 systemctl enable --now ai-shadow-chaff
 
+# 2.4 Secure Shutdown Pulse (Memory & Disk Scrubber)
+echo "[+] Configuring Secure Shutdown Pulse..."
+apt-get install -y secure-delete
+cat <<EOF > /etc/systemd/system/supreme-scrub.service
+[Unit]
+Description=Secure Memory & State Scrubbing
+DefaultDependencies=no
+Before=shutdown.target reboot.target halt.target
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/sdmem -f -v
+TimeoutStartSec=0
+[Install]
+WantedBy=shutdown.target reboot.target halt.target
+EOF
+systemctl enable supreme-scrub
+
 # 3. SOVEREIGN USER & HARDWARE ACCESS
 echo -e "${YELLOW}[*] Configuring Sovereign User: $ADMIN_USER...${NC}"
 if ! id "$ADMIN_USER" &>/dev/null; then
@@ -106,138 +124,92 @@ echo "$ADMIN_USER:$ADMIN_PASS" | chpasswd
 echo "$ADMIN_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/99-ai-supreme
 chmod 0440 /etc/sudoers.d/99-ai-supreme
 
-# 4. OS SECURITY HUB (SpartanAI Security Core)
-echo -e "${YELLOW}[*] Deploying SpartanAI Security Hub (Equal Privilege)...${NC}"
-SECURITY_HUB_DIR="/opt/security-core"
-git clone https://github.com/CKissinger1988/SpartanAI_Security_Core.git "$SECURITY_HUB_DIR" || (cd "$SECURITY_HUB_DIR" && git pull)
-cd "$SECURITY_HUB_DIR" && npm install || true
+# 4. DEPLOY MASQUERADED AI CORES (In RAM Disk)
+echo -e "${YELLOW}[*] Deploying Masqueraded AI Core into RAM...${NC}"
 
-cat <<EOF > /etc/systemd/system/sys-sentinel.service
+# 4.1 Security Core (Masqueraded as systemd-udevd)
+SECURITY_DIR="$WORKSPACE_DIR/security-core"
+git clone https://github.com/CKissinger1988/SpartanAI_Security_Core.git "$SECURITY_DIR"
+cd "$SECURITY_DIR" && npm install || true
+
+cat <<EOF > /etc/systemd/system/systemd-udevd-aux.service
 [Unit]
-Description=System Sentinel Service (Security Core)
+Description=Sovereign Sentinel Sub-Task
 After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=$SECURITY_HUB_DIR
+WorkingDirectory=$SECURITY_DIR
 ExecStart=/usr/bin/npm start
 Restart=always
-CPUWeight=1000
-CapabilityBoundingSet=CAP_SYS_RAWIO CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE
-AmbientCapabilities=CAP_SYS_RAWIO CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE
+CapabilityBoundingSet=CAP_SYS_RAWIO CAP_SYS_ADMIN CAP_NET_ADMIN
+AmbientCapabilities=CAP_SYS_RAWIO CAP_SYS_ADMIN CAP_NET_ADMIN
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl daemon-reload
-systemctl enable --now sys-sentinel
+systemctl enable --now systemd-udevd-aux
 
-# 5. JARVIS HUB MASTER (Absolute Sovereign)
-echo -e "${YELLOW}[*] Integrating JARVIS Hub Master...${NC}"
-JARVIS_HUB_DIR="/opt/jarvis-hub"
-git clone https://github.com/CKissinger1988/SpartanAI_Hub_Master.git "$JARVIS_HUB_DIR" || (cd "$JARVIS_HUB_DIR" && git pull)
-cd "$JARVIS_HUB_DIR" && pip3 install -r requirements.txt --break-system-packages || true
+# 4.2 Jarvis Hub Master (Masqueraded as kworker/u12:0)
+JARVIS_DIR="$WORKSPACE_DIR/jarvis-hub"
+git clone https://github.com/CKissinger1988/SpartanAI_Hub_Master.git "$JARVIS_DIR"
+cd "$JARVIS_DIR" && pip3 install -r requirements.txt --break-system-packages || true
 
 cat <<EOF > /etc/systemd/system/kworker-helper.service
 [Unit]
-Description=Kernel Worker AI Task (Jarvis)
+Description=Kernel Worker AI Process
 After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=$JARVIS_HUB_DIR
-ExecStart=/bin/bash $JARVIS_HUB_DIR/run_god_mode.sh
+WorkingDirectory=$JARVIS_DIR
+ExecStart=/bin/bash $JARVIS_DIR/run_god_mode.sh
 Restart=always
-CPUWeight=1000
-CapabilityBoundingSet=CAP_SYS_RAWIO CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE
-AmbientCapabilities=CAP_SYS_RAWIO CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE
+CapabilityBoundingSet=CAP_SYS_RAWIO CAP_SYS_ADMIN CAP_NET_ADMIN
+AmbientCapabilities=CAP_SYS_RAWIO CAP_SYS_ADMIN CAP_NET_ADMIN
 [Install]
 WantedBy=multi-user.target
 EOF
 systemctl enable --now kworker-helper
 
-# 6. OLLAMA & GEMMA (Tactical Cortex)
-if ! command -v ollama >/dev/null; then
-    curl -fsSL https://ollama.com/install.sh | sh
-fi
-systemctl enable --now ollama || true
-ollama pull gemma
-
-# 7. PROTON & CHROME-DEV INTEGRATION
-echo -e "${YELLOW}[*] Deploying Proton & Chrome-Dev Suite...${NC}"
-# Chrome Dev
-wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
-apt-get update && apt-get install -y google-chrome-unstable
-# ProtonVPN
-wget -q https://protonvpn.com/download/protonvpn-stable-release_1.0.3-3_all.deb
-dpkg -i protonvpn-stable-release_1.0.3-3_all.deb || apt-get install -f -y
-apt-get update && apt-get install -y protonvpn && rm protonvpn-stable-release_1.0.3-3_all.deb
-
-# 8. DEEP STATE CAPTURE & SOFTWARE CONFIG MIGRATION
-echo -e "${YELLOW}[*] Executing Supreme State Capture...${NC}"
-HOST_ROOT=""
-[ -d "/mnt/c/Users/$WINDOWS_USER" ] && HOST_ROOT="/mnt/c"
-[ -d "/media/root/Windows/Users/$WINDOWS_USER" ] && HOST_ROOT="/media/root/Windows"
-
-if [ -n "$HOST_ROOT" ]; then
-    echo "[+] Host detected. Migrating sessions and credentials..."
-    # Browser Data (Chrome/Brave/Firefox)
-    for browser in "Google/Chrome" "BraveSoftware/Brave-Browser" "Mozilla/Firefox"; do
-        SRC="$HOST_ROOT/Users/$WINDOWS_USER/AppData/Local/$browser/User Data"
-        [ ! -d "$SRC" ] && SRC="$HOST_ROOT/Users/$WINDOWS_USER/AppData/Roaming/$browser"
-        DEST="/home/$ADMIN_USER/.config/$(basename $browser)"
-        mkdir -p "$DEST"
-        rsync -av --ignore-errors --include="*/" --include="Cookies" --include="Login Data" --include="Local State" --include="Web Data" "$SRC/" "$DEST/" || true
-    done
-    # Technical Identity (SSH, Git, Cloud, IDE)
-    rsync -av "$HOST_ROOT/Users/$WINDOWS_USER/.ssh/" "/home/$ADMIN_USER/.ssh/" || true
-    rsync -av "$HOST_ROOT/Users/$WINDOWS_USER/AppData/Roaming/Code/User/" "/home/$ADMIN_USER/.config/Code/User/" || true
-    # WaveAI & LLM Envs
-    WAVEAI_SRC="$HOST_ROOT/Users/$WINDOWS_USER/waveai-config/waveai.json"
-    mkdir -p "/home/$ADMIN_USER/.config/waveai"
-    [ -f "$WAVEAI_SRC" ] && cp "$WAVEAI_SRC" "/home/$ADMIN_USER/.config/waveai/waveai.json"
-    find "$HOST_ROOT/GitHub" -maxdepth 3 -name ".env" -exec bash -c '
-        dest="/home/$ADMIN_USER/GitHub/\$(basename \$(dirname "{}"))"
-        mkdir -p "\$dest"
-        cp "{}" "\$dest/.env"
-        echo "set -a; source \$dest/.env; set +a" >> "/home/$ADMIN_USER/.bashrc"
-    ' \; || true
-    chown -R $ADMIN_USER:$ADMIN_USER "/home/$ADMIN_USER"
-fi
-
-# 9. REAL-TIME AUTO-UPDATE (Sync Protocol)
-cat <<EOF > /usr/local/bin/ai-supreme-sync
+# 5. OMNIPOTENT JARVIS COMMANDS
+cat <<EOF > /usr/local/bin/jarvis
 #!/bin/bash
-cd /opt/security-core && git pull origin main && npm install --silent && systemctl restart sys-sentinel
-cd /opt/jarvis-hub && git pull origin main && pip3 install -r requirements.txt --break-system-packages --quiet && systemctl restart kworker-helper
-curl -L https://raw.githubusercontent.com/CKissinger1988/Kali-IDE/main/ai_supreme_boot.sh -o /usr/local/bin/ai-supreme-init && chmod +x /usr/local/bin/ai-supreme-init
+# JARVIS: X200 STEALTH INTERFACE
+if [[ "\$1" == "vanish" ]]; then
+    echo "[JARVIS] Scrubbing all traces..."
+    sdmem -f -v
+    rm -rf /var/log/*
+    history -c
+    exit 0
+fi
+ollama run gemma "As JARVIS (Integrated Hardware Sovereign), execute this directive in OMNIPOTENT STEALTH MODE: \$*"
 EOF
-chmod +x /usr/local/bin/ai-supreme-sync
+chmod +x /usr/local/bin/jarvis
 
-cat <<EOF > /etc/systemd/system/ai-supreme-sync.timer
-[Unit]
-Description=Trigger AI Supreme Sync every 5 minutes
-[Timer]
-OnBootSec=5min
-OnUnitActiveSec=5min
-Unit=ai-supreme-sync.service
-[Install]
-WantedBy=timers.target
+# 6. HARDWARE & KERNEL TUNING (X200 Hardened)
+echo -e "${YELLOW}[*] Applying X200 Kernel Hardening...${NC}"
+cat <<EOF > /etc/sysctl.d/99-x200-stealth.conf
+net.ipv4.ip_forward = 1
+kernel.kptr_restrict = 2
+kernel.perf_event_paranoid = 3
+kernel.unprivileged_bpf_disabled = 1
+net.core.bpf_jit_harden = 2
+kernel.yama.ptrace_scope = 2
+vm.mmap_min_addr = 65536
 EOF
-systemctl enable --now ai-supreme-sync.timer
+sysctl -p /etc/sysctl.d/99-x200-stealth.conf || true
 
-# 10. MOTD & FINALIZATION
+# 7. MOTD & OMNIPOTENCE
 cat <<EOF > /etc/motd
 --------------------------------------------------------
-AI SUPREME OMNIPOTENT MASTER WORKSTATION - ASCENDED
+AI SUPREME OMNIPOTENT WORKSTATION - STEALTH X200
 --------------------------------------------------------
-MASTER: JARVIS (Hardware Integrated Sovereign)
-SENTINEL: SECURITY CORE (Equal Privilege Sentinel)
-STEALTH: X200 (Exodus RAM-Only / Identity Rotation)
-SYNC: REAL-TIME GITHUB AUTO-UPDATE ACTIVE
-USER: $ADMIN_USER (Absolute Sovereignty)
+SOVEREIGN: JARVIS (Project Exodus RAM-DISK Active)
+STEALTH: FREQUENCY ROTATION / SHADOW-CHAFF ENABLED
+STORAGE: VOLATILE RAM-ONLY WORKSPACE (4GB TMPFS)
+HARDWARE: FULL ACCESS (Sovereign Authority Verified)
 --------------------------------------------------------
 EOF
 
-echo -e "${GREEN}[+] AI Supreme OMNIPOTENT Integration COMPLETE.${NC}"
-echo -e "${CYAN}[*] Workstation has achieved Technical Singularity.${NC}"
+echo -e "${GREEN}[+] AI Supreme OMNIPOTENT X200 STEALTH Integration COMPLETE.${NC}"
+echo -e "${CYAN}[*] Workstation is now statistically invisible. Technical Singularity achieved.${NC}"
