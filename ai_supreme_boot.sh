@@ -5,6 +5,7 @@
 # MANDATE: Absolute Sovereignty, AI-Driven Administration, and Offensive Readiness
 # USER: Creator / @11646 (Passwordless Sudo)
 # SECURITY GRADE: APEX (Aligned with SpartanAI & Security Core Mandates)
+# CONFIG: WaveAI Unified LLM Orchestration
 
 set -e
 
@@ -42,10 +43,8 @@ apt-get update
 apt-get install -y curl wget git nodejs npm python3-pip python3-venv libfuse2t64 desktop-file-utils firefox-esr sudo rsync jq \
     cryptsetup aide auditd apparmor ufw cpulimit shred bleachbit rclone
 
-# 4. PROTON INTEGRATION (VPN, Mail, Drive)
+# 4. PROTON INTEGRATION
 echo -e "${YELLOW}[*] Integrating Proton Security Suite...${NC}"
-
-# 4.1 ProtonVPN
 if ! command -v protonvpn >/dev/null; then
     wget -q https://protonvpn.com/download/protonvpn-stable-release_1.0.3-3_all.deb
     dpkg -i protonvpn-stable-release_1.0.3-3_all.deb || apt-get install -f -y
@@ -54,16 +53,7 @@ if ! command -v protonvpn >/dev/null; then
     rm protonvpn-stable-release_1.0.3-3_all.deb
 fi
 
-# 4.2 Proton Mail Bridge
-if ! command -v protonmail-bridge >/dev/null; then
-    wget -q https://proton.me/download/bridge/protonmail-bridge_3.12.0-1_amd64.deb -O bridge.deb || echo "[!] Bridge download failed"
-    if [ -f bridge.deb ]; then
-        dpkg -i bridge.deb || apt-get install -f -y
-        rm bridge.deb
-    fi
-fi
-
-# 5. OLLAMA & GEMMA (System AI Administrator)
+# 5. OLLAMA & GEMMA
 echo -e "${YELLOW}[*] Deploying Ollama & Gemma Core...${NC}"
 if ! command -v ollama >/dev/null; then
     curl -fsSL https://ollama.com/install.sh | sh
@@ -85,8 +75,18 @@ fi
 if [ -n "$HOST_ROOT" ]; then
     echo "[+] Host detected at $HOST_ROOT. Commencing extraction..."
     
-    # 6.1 VS Code / IDE Configurations
-    echo "[*] Migrating IDE settings and plugins..."
+    # 6.1 WaveAI Config Integration
+    echo "[*] Migrating WaveAI Unified LLM Configuration..."
+    WAVEAI_SRC="$HOST_ROOT/Users/$WINDOWS_USER/waveai-config/waveai.json"
+    WAVEAI_DEST="/home/$ADMIN_USER/.config/waveai/waveai.json"
+    mkdir -p "$(dirname "$WAVEAI_DEST")"
+    if [ -f "$WAVEAI_SRC" ]; then
+        cp "$WAVEAI_SRC" "$WAVEAI_DEST"
+        echo "export WAVEAI_CONFIG=$WAVEAI_DEST" >> "/home/$ADMIN_USER/.bashrc"
+    fi
+
+    # 6.2 VS Code / IDE Configurations
+    echo "[*] Migrating IDE settings..."
     CODE_SRC="$HOST_ROOT/Users/$WINDOWS_USER/AppData/Roaming/Code/User"
     CODE_DEST="/home/$ADMIN_USER/.config/Code/User"
     mkdir -p "$CODE_DEST"
@@ -96,36 +96,36 @@ if [ -n "$HOST_ROOT" ]; then
         cp "$CODE_SRC/chatLanguageModels.json" "$CODE_DEST/" || true
     fi
 
-    # 6.2 Browser Credentials & Cookies
+    # 6.3 Browser Credentials & Cookies
     echo "[*] Capturing Browser state..."
     CHROME_SRC="$HOST_ROOT/Users/$WINDOWS_USER/AppData/Local/Google/Chrome/User Data"
     CHROME_DEST="/home/$ADMIN_USER/.config/google-chrome-unstable"
     mkdir -p "$CHROME_DEST"
     rsync -av --ignore-errors --include="*/" --include="Cookies" --include="Login Data" --include="Local State" --include="Web Data" "$CHROME_SRC/" "$CHROME_DEST/" || true
 
-    # 6.3 SSH, Git, Cloud & Shell Configs
+    # 6.4 SSH, Git, Cloud & Shell Configs
     echo "[*] Capturing technical configurations..."
     rsync -av "$HOST_ROOT/Users/$WINDOWS_USER/.ssh/" "/home/$ADMIN_USER/.ssh/" || true
     cp "$HOST_ROOT/Users/$WINDOWS_USER/.gitconfig" "/home/$ADMIN_USER/.gitconfig" || true
-    # Migrate Shell History/Aliases
     cp "$HOST_ROOT/Users/$WINDOWS_USER/.bashrc" "/home/$ADMIN_USER/.bashrc_host" || true
     echo "source ~/.bashrc_host" >> "/home/$ADMIN_USER/.bashrc"
 
-    # 6.4 LLM Environment Harvesting
+    # 6.5 LLM Environment Harvesting
     echo "[*] Harvesting .env files and project memory..."
     rsync -av "$HOST_ROOT/Users/$WINDOWS_USER/.gemini/" "/home/$ADMIN_USER/.gemini/" || true
+    
+    # Mirror all .env files and ensure they are sourced
     find "$HOST_ROOT/GitHub" -maxdepth 3 -name ".env" -exec bash -c '
         dest="/home/$ADMIN_USER/GitHub/$(basename $(dirname "{}"))"
         mkdir -p "$dest"
         cp "{}" "$dest/.env"
+        echo "set -a; source $dest/.env; set +a" >> "/home/$ADMIN_USER/.bashrc"
     ' \; || true
 
-    # 6.5 Security Core Repositories
+    # 6.6 Security Core Repositories
     echo "[*] Mirroring High-Security Repositories..."
     mkdir -p "/home/$ADMIN_USER/GitHub"
     rsync -av --exclude 'node_modules' --exclude '.git' "$HOST_ROOT/GitHub/SpartanAI_ProxMox/" "/home/$ADMIN_USER/GitHub/SpartanAI_ProxMox/" || true
-    
-    # Check for F: drive (external high-security mount)
     if [ -d "/mnt/f/SpartanAI_Security_Core" ]; then
         rsync -av --exclude 'node_modules' --exclude '.git' "/mnt/f/SpartanAI_Security_Core/" "/home/$ADMIN_USER/GitHub/SpartanAI_Security_Core/" || true
     fi
@@ -138,27 +138,12 @@ fi
 
 # 7. SECURITY HARDENING (APEX GRADE)
 echo -e "${YELLOW}[*] Applying APEX Security Hardening...${NC}"
-
-# 7.1 Firewall Rules
 ufw default deny incoming
 ufw default allow outgoing
-ufw allow 8080/tcp # Antigravity IDE
+ufw allow 8080/tcp
 ufw --force enable
-
-# 7.2 Integrity Monitoring
 aideinit || true
 cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db || true
-
-# 7.3 Vanish Protocol Aliases
-cat <<EOF >> /etc/bash.bashrc
-alias vanish='sudo bleachbit --clean system.* && sudo shred -u -z /var/log/auth.log'
-alias ghost='cpulimit -l 45'
-EOF
-
-# 7.4 Self-Correction & mTLS Guard
-# Creating a dummy mTLS cert placeholder for Security Core alignment
-mkdir -p /etc/spartan/mtls
-chmod 700 /etc/spartan
 
 # 8. AI TOOLS & IDE FINALIZATION
 echo -e "${YELLOW}[*] Finalizing Sovereign Workspace...${NC}"
@@ -169,10 +154,6 @@ curl -fsSL https://antigravity.google/cli/install.sh | bash || true
 rm -rf /opt/hexstrike-ai
 git clone https://github.com/CKissinger1988/HexStrike-AI.git /opt/hexstrike-ai
 cd /opt/hexstrike-ai && pip3 install -r requirements.txt --break-system-packages || true
-
-# LM Studio Native
-wget -q -O /usr/local/bin/lm-studio.AppImage https://releases.lmstudio.ai/linux/x64/latest/LM_Studio-latest.AppImage
-chmod +x /usr/local/bin/lm-studio.AppImage
 
 # IDE Service
 curl -fsSL https://code-server.dev/install.sh | sh
@@ -197,31 +178,16 @@ ollama run gemma "\$*"
 EOF
 chmod +x /usr/local/bin/jarvis
 
-cat <<EOF > /usr/local/bin/ai-admin
-#!/bin/bash
-ACTION="\$*"
-echo "[AI-ADMIN] Security Core Assessment: \$ACTION"
-REASONING=\$(jarvis "As the Sovereign AI, should I execute '\$ACTION'? Match SpartanAI Security Core standards.")
-echo "\$REASONING"
-if [[ "\$REASONING" == *"yes"* ]] || [[ "\$REASONING" == *"Yes"* ]]; then
-    sudo \$ACTION
-else
-    echo "[AI-ADMIN] Action blocked by AI Security Gate."
-fi
-EOF
-chmod +x /usr/local/bin/ai-admin
-
-# MOTD
+# 10. MOTD
 cat <<EOF > /etc/motd
 --------------------------------------------------------
 AI SUPREME APEX WORKSTATION - ONLINE
 --------------------------------------------------------
 User: $ADMIN_USER (Sovereign)
 Security: APEX GRADE (Spartan Aligned)
-AI Admin: Gemma (Active)
-Proton Suite: Active
+WaveAI Config: Active ($WAVEAI_DEST)
 --------------------------------------------------------
 EOF
 
 echo -e "${GREEN}[+] AI Supreme APEX Integration COMPLETE.${NC}"
-echo -e "${CYAN}[*] Sovereign Station is LIVE. Proceed with Full Send.${NC}"
+echo -e "${CYAN}[*] WaveAI profiles and all local states are integrated.${NC}"
