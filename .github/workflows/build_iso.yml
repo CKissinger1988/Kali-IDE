@@ -27,12 +27,18 @@ jobs:
       - name: Run Build Script
         env:
           ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
-          ISO_PATH: kali-linux-2026.1-live-amd64.iso
-          OUTPUT_ISO: kali-linux-2026.1-spartanai.iso
         run: |
+          # Generate a secure temp file for ADMIN_PASS
+          echo "$ADMIN_PASS" > admin_pass.tmp
+          chmod 600 admin_pass.tmp
+          
+          # Generate config file for paths
+          echo "ISO_PATH=kali-linux-2026.1-live-amd64.iso" > .env
+          echo "OUTPUT_ISO=kali-linux-2026.1-spartanai.iso" >> .env
+          
           chmod +x build_spartan.sh
-          # Pass variables explicitly to sudo
-          sudo ADMIN_PASS=$ADMIN_PASS ISO_PATH=$ISO_PATH OUTPUT_ISO=$OUTPUT_ISO ./build_spartan.sh
+          # Pass the temp file to the build script
+          sudo ./build_spartan.sh admin_pass.tmp
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

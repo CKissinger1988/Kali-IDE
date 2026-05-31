@@ -4,10 +4,15 @@ set -xe
 # Load configuration if .env exists
 if [ -f .env ]; then
     source .env
-    export ADMIN_PASS ISO_PATH OUTPUT_ISO
 fi
 
-# Fallback to direct environment variables if not set by .env
+# Use temporary file for ADMIN_PASS if provided as argument
+if [ -f "$1" ]; then
+    export ADMIN_PASS=$(cat "$1")
+    rm "$1"
+fi
+
+# Fallback if ADMIN_PASS is still not set
 if [ -z "$ADMIN_PASS" ]; then
     echo -e "[!] Error: ADMIN_PASS environment variable not set for build."
     exit 1
@@ -16,7 +21,6 @@ fi
 # Download ISO if not found
 if [ ! -f "$ISO_PATH" ]; then
     echo "[*] Base ISO not found at $ISO_PATH. Downloading..."
-    # Simplified download logic
     curl -L "https://mirrors.dotsrc.org/kali-images/kali-2026.1/kali-linux-2026.1-live-amd64.iso" -o "$ISO_PATH"
 fi
 
