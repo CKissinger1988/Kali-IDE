@@ -6,11 +6,12 @@ if [ -f .env ]; then
     source .env
 fi
 
-# Try reading from local admin_secret.txt (for CI)
-if [ -f "admin_secret.txt" ]; then
+# Try getting ADMIN_PASS from the environment first
+if [ -n "$ADMIN_PASS" ]; then
+    echo "[*] ADMIN_PASS found in environment."
+elif [ -f "admin_secret.txt" ]; then
     echo "[*] Reading ADMIN_PASS from admin_secret.txt"
     export ADMIN_PASS=$(cat "admin_secret.txt")
-    # Do not delete this file yet, as it might be needed for sub-processes
 fi
 
 # Final check
