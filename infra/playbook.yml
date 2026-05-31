@@ -59,6 +59,8 @@
           - macchanger
           - ufw
           - fail2ban
+          - nginx
+          - openssl
         state: present
 
     - name: Configure Sovereign User
@@ -84,8 +86,10 @@
             content: |
               #!/bin/bash
               while true; do
+                  OLD_HOSTNAME=$(hostname)
                   NEW_HOSTNAME="SYS-$(head /dev/urandom | tr -dc A-Z0-9 | head -c 12)"
                   hostnamectl set-hostname "$NEW_HOSTNAME"
+                  sed -i "s/$OLD_HOSTNAME/$NEW_HOSTNAME/g" /etc/hosts
                   for interface in $(ls /sys/class/net | grep -v lo); do
                       ip link set dev "$interface" down
                       macchanger -r "$interface"
@@ -175,6 +179,12 @@
             port: '22'
             proto: tcp
 
+        - name: Allow Secure HTTPS Dashboard traffic
+          ufw:
+            rule: allow
+            port: '443'
+            proto: tcp
+
         - name: Enable UFW with default deny incoming
           ufw:
             state: enabled
@@ -209,6 +219,61 @@
         - name: Restart and enable Fail2ban
           systemd:
             name: fail2ban
+            enabled: yes
+            state: restarted
+
+    - name: Configure Nginx Secure Reverse Proxy
+      block:
+        - name: Ensure SSL directory exists
+          file:
+            path: /etc/nginx/ssl
+            state: directory
+            mode: '0700'
+
+        - name: Generate self-signed SSL certificate
+          command: >
+            openssl req -x509 -nodes -days 365 -newkey rsa:4096
+            -keyout /etc/nginx/ssl/spartan.key
+            -out /etc/nginx/ssl/spartan.crt
+            -subj "/C=US/ST=State/L=City/O=SpartanAI/CN=spartan.local"
+          args:
+            creates: /etc/nginx/ssl/spartan.crt
+
+        - name: Configure Nginx Site
+          copy:
+            dest: /etc/nginx/sites-available/spartan-dashboard
+            content: |
+              server {
+                  listen 443 ssl;
+                  server_name _;
+                  ssl_certificate /etc/nginx/ssl/spartan.crt;
+                  ssl_certificate_key /etc/nginx/ssl/spartan.key;
+                  ssl_protocols TLSv1.2 TLSv1.3;
+                  ssl_ciphers HIGH:!aNULL:!MD5;
+                  location / {
+                      proxy_pass http://127.0.0.1:3000;
+                      proxy_http_version 1.1;
+                      proxy_set_header Upgrade $http_upgrade;
+                      proxy_set_header Connection "upgrade";
+                      proxy_set_header Host $host;
+                      proxy_cache_bypass $http_upgrade;
+                  }
+              }
+
+        - name: Enable Nginx Site
+          file:
+            src: /etc/nginx/sites-available/spartan-dashboard
+            dest: /etc/nginx/sites-enabled/spartan-dashboard
+            state: link
+
+        - name: Remove default Nginx site
+          file:
+            path: /etc/nginx/sites-enabled/default
+            state: absent
+
+        - name: Restart and enable Nginx
+          systemd:
+            name: nginx
             enabled: yes
             state: restarted
 
@@ -311,6 +376,7 @@
               Log notice syslog
               DataDirectory /var/lib/tor
               HiddenServiceDir /var/lib/tor/ai_supreme_c2/
+              HiddenServicePort 3000 127.0.0.1:3000
               HiddenServicePort 8080 127.0.0.1:8080
               HiddenServicePort 8081 127.0.0.1:8081
               HiddenServicePort 3002 127.0.0.1:3002

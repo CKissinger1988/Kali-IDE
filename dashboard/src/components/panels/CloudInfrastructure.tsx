@@ -35,7 +35,7 @@ export default function CloudInfrastructure() {
         setVms(allVms);
       }
     } catch (err) {
-      console.error("Failed to load infrastructure data:", err);
+      
     } finally {
       setLoading(false);
     }

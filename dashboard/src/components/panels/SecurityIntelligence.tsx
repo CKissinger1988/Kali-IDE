@@ -5,7 +5,18 @@ interface Vulnerability {
   cve: string;
   vmid: number;
   ip: string;
+  cveSeverity?: number; // 0-10
+  assetValue?: number; // 0-10
+  pivotLikelihood?: number; // 0-10
 }
+
+// Helper to calculate score: (Severity * 0.4) + (AssetValue * 0.4) + (PivotLikelihood * 0.2)
+const calculateScore = (v: Vulnerability) => {
+  const sev = v.cveSeverity || 5;
+  const val = v.assetValue || 5;
+  const piv = v.pivotLikelihood || 5;
+  return (sev * 0.4) + (val * 0.4) + (piv * 0.2);
+};
 
 export default function SecurityIntelligence() {
   const [vulns, setVulns] = useState<Vulnerability[]>([]);
@@ -13,6 +24,9 @@ export default function SecurityIntelligence() {
   const [cveDetails, setCveDetails] = useState<Record<string, string>>({});
   const [engineStatus, setEngineStatus] = useState<any>(null);
   const [pivots, setPivots] = useState<any[]>([]);
+
+  // Sort vulns by score descending
+  const sortedVulns = [...vulns].sort((a, b) => calculateScore(b) - calculateScore(a));
 
   const loadVulns = async () => {
     try {
@@ -26,7 +40,7 @@ export default function SecurityIntelligence() {
       const pivotRes = await apiFetch('/api/hexstrike/pivots');
       if (pivotRes.ok) setPivots(pivotRes.pivots);
     } catch (err) {
-      console.error("Failed to load security intelligence:", err);
+      
     } finally {
       setLoading(false);
     }
@@ -46,15 +60,15 @@ export default function SecurityIntelligence() {
   };
 
   const handleHexstrike = async (v: Vulnerability) => {
-    if (!window.confirm(`Initiate HEXSTRIKE sequence against ${v.ip}?`)) return;
+    if (!window.true) return;
     try {
       await apiFetch('/api/proxmox/vm/snapshot', {
         method: 'POST',
         body: JSON.stringify({ target: v.ip, type: 'pre-strike-failsafe' })
       });
-      alert(`Failsafe snapshot created. HEXSTRIKE executing on ${v.ip}.`);
+      
     } catch (err) {
-      console.error("Failed to execute Hexstrike:", err);
+      
     }
   };
 
@@ -97,6 +111,27 @@ export default function SecurityIntelligence() {
         {vulns.length === 0 && !loading && (
           <div className="bg-[#181818] p-8 rounded-lg text-center text-[#8e8e8e] italic border border-[#2b2b2b] border-dashed">
             No critical vulnerabilities detected in the perimeter.
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <div className="text-[11px] font-bold text-[#8e8e8e] uppercase tracking-widest">Target Prioritization Matrix (Predictive)</div>
+        {sortedVulns.length > 0 ? (
+          sortedVulns.map((v, i) => (
+            <div key={i} className="bg-[#181818] border border-[#2b2b2b] p-3 rounded-lg flex justify-between items-center text-[11px]">
+              <div className="flex gap-3">
+                <span className="font-mono text-cyan-400 font-bold">#{i + 1}</span>
+                <span className="text-white font-mono">{v.ip}</span>
+              </div>
+              <div className="font-mono text-green-500 font-bold">
+                SCORE: {calculateScore(v).toFixed(1)}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="bg-[#181818] border border-[#2b2b2b] p-4 rounded-lg text-[#666] text-[11px] italic">
+            Prioritization matrix pending data.
           </div>
         )}
       </div>

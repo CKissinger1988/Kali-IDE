@@ -32,7 +32,7 @@ sudo apt-get update -y
 echo -e "${GREEN}[+] Deploying tactical toolsets (Full Arsenal)...${ENDC}"
 # We'll install the 'large' metapackage which includes most commonly used tools
 # This can take time, so we'll check if they are already there first
-sudo apt-get install -y kali-linux-large tor postgresql ufw fail2ban python3-venv python3-pip
+sudo apt-get install -y kali-linux-large tor postgresql ufw fail2ban python3-venv python3-pip nginx openssl
 
 # 4. Configure Tactical Services
 echo -e "${GREEN}[+] Configuring tactical services...${ENDC}"
@@ -45,9 +45,42 @@ sudo service tor start
 # 5. Hardening & Perimeter Defense
 echo -e "${GREEN}[+] Hardening perimeter with UFW & Fail2ban...${ENDC}"
 sudo ufw allow 22/tcp
+sudo ufw allow 443/tcp
 sudo ufw default deny incoming
 sudo ufw --force enable
 sudo systemctl enable fail2ban --now
+
+# 5.5. Configure Nginx Secure Reverse Proxy
+echo -e "${GREEN}[+] Configuring Nginx Reverse Proxy with SSL...${ENDC}"
+sudo mkdir -p /etc/nginx/ssl
+if [ ! -f "/etc/nginx/ssl/spartan.crt" ]; then
+    sudo openssl req -x509 -nodes -days 365 -newkey rsa:4096 \
+        -keyout /etc/nginx/ssl/spartan.key \
+        -out /etc/nginx/ssl/spartan.crt \
+        -subj "/C=US/ST=State/L=City/O=SpartanAI/CN=spartan.local" 2>/dev/null
+fi
+
+sudo bash -c 'cat <<EOF > /etc/nginx/sites-available/spartan-dashboard
+server {
+    listen 443 ssl;
+    server_name _;
+    ssl_certificate /etc/nginx/ssl/spartan.crt;
+    ssl_certificate_key /etc/nginx/ssl/spartan.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOF'
+sudo ln -sf /etc/nginx/sites-available/spartan-dashboard /etc/nginx/sites-enabled/spartan-dashboard
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo systemctl restart nginx
 
 # 6. Integrate SpartanAI Autonomous SOC
 echo -e "${GREEN}[+] Deploying SpartanAI Security Core...${ENDC}"

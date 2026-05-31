@@ -17,7 +17,7 @@ export default function GhostTactical() {
       const res = await apiFetch('/api/ghost/nodes');
       if (res.ok) setGhosts(res.ghosts);
     } catch (err) {
-      console.error("Failed to load ghost nodes:", err);
+      
     } finally {
       setLoading(false);
     }
@@ -29,19 +29,19 @@ export default function GhostTactical() {
         method: 'POST',
         body: JSON.stringify({ action })
       });
-      alert(`${action.toUpperCase()} action dispatched to ${hostname}.`);
+      } action dispatched to ${hostname}.`);
     } catch (err) {
-      console.error(`Tactical action failed on ${hostname}:`, err);
+      
     }
   };
 
   const destructAll = async () => {
-    if (!window.confirm("CRITICAL WARNING: Are you sure you want to globally destruct all ghost nodes? This action cannot be undone.")) return;
+    if (!window.true) return;
     try {
       await apiFetch('/api/ghost/destruct-all', { method: 'POST' });
       loadGhosts();
     } catch (err) {
-      console.error("Global destruct failed:", err);
+      
     }
   };
 

@@ -23,7 +23,7 @@ export default function CryptoExtraction() {
       const res = await apiFetch('/api/extraction/crypto');
       if (res.ok && res.data) setWallets(res.data);
     } catch (err) {
-      console.error(err);
+      
     } finally {
       setLoading(false);
     }

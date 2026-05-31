@@ -37,6 +37,18 @@ echo -e "${GREEN}[+] Offensive and Defensive Matrices Active.${NC}"
 # 4. Orchestrator & Sentinel Bridge Launch
 echo -e "${CYAN}[*] Launching Node Orchestrator (Sentinel Bridge)...${NC}"
 if [ -f "package.json" ]; then
+    # Ensure backend dependencies are installed
+    if [ ! -d "node_modules" ]; then
+        echo -e "${CYAN}[*] Installing Orchestrator dependencies...${NC}"
+        npm install
+    fi
+    
+    # Ensure frontend dashboard is built
+    if [ -d "dashboard" ] && [ ! -d "dashboard/node_modules" ]; then
+        echo -e "${CYAN}[*] Building React Dashboard...${NC}"
+        cd dashboard && npm install && npm run build && cd ..
+    fi
+
     # Run the TSX backend defined in package.json
     echo -e "${GREEN}[+] Dashboard and API backend coming online...${NC}"
     npm start

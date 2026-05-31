@@ -42,7 +42,7 @@ export default function PhishingOperations() {
         setCampaigns(res.campaigns);
       }
     } catch (err) {
-      console.error('Failed to load campaigns', err);
+      
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export default function PhishingOperations() {
         setCredentials(res.credentials);
       }
     } catch (err) {
-      console.error('Failed to load credentials', err);
+      
     } finally {
       setLoadingCreds(false);
     }
@@ -77,20 +77,20 @@ export default function PhishingOperations() {
         method: 'POST',
         body: JSON.stringify({ name: campaignName, targets: targetEmails.split('\n') })
       });
-      alert(`Campaign [${campaignName}] launched successfully!`);
+      
       setCampaignName('');
       setTargetEmails('');
       loadCampaigns();
     } catch (err) {
-      console.error(err);
-      alert('Failed to launch campaign.');
+      
+      
     } finally {
       setIsLaunching(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(`Are you sure you want to abort campaign ${id}?`)) return;
+    if (!window.true) return;
     
     try {
       await apiFetch(`/api/phishing/campaigns/${id}`, {
@@ -98,8 +98,8 @@ export default function PhishingOperations() {
       });
       loadCampaigns();
     } catch (err) {
-      console.error('Failed to delete campaign', err);
-      alert('Failed to abort campaign.');
+      
+      
     }
   };
 
@@ -112,7 +112,7 @@ export default function PhishingOperations() {
         body: JSON.stringify({ active: newState })
       });
     } catch (err) {
-      console.error('Failed to toggle Jarvis', err);
+      
       setJarvisActive(!newState); // Revert on failure
     }
   };

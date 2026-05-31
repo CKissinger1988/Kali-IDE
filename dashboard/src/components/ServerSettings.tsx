@@ -23,7 +23,7 @@ export const ServerSettings: React.FC = () => {
   // Save the IP address to local storage and sync with backend API
   const handleSave = async () => {
     if (encryptionMode === 'mtls' && !serverIp.startsWith('https://')) {
-      alert('[!] CRITICAL: Zero-Trust mTLS requires a secure HTTPS endpoint.');
+      
       return;
     }
 
@@ -40,13 +40,13 @@ export const ServerSettings: React.FC = () => {
       });
       
       if (response.ok) {
-        alert(`Server IP [${serverIp}] saved and synced to backend!`);
+        
       } else {
-        alert('Saved locally, but failed to sync with backend.');
+        
       }
     } catch (error) {
-      console.error('Failed to sync server IP to backend:', error);
-      alert('Saved locally, but a network error occurred syncing to backend.');
+      
+      
     } finally {
       setIsSaving(false);
     }

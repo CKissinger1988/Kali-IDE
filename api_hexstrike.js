@@ -14,12 +14,37 @@ const hexstrikeState = {
     missionLog: [
         "[HEXSTRIKE] Autonomous Engine Online. Policy: APEX_SOVEREIGN",
         "[INTEL] Periodic perimeter scan initiated."
-    ]
+    ],
+    decisionLog: [] // Structured agent decisions
 };
 
 // GET /api/hexstrike/status
 router.get('/status', (req, res) => {
     res.json({ ok: true, state: hexstrikeState });
+});
+
+// POST /api/hexstrike/log-decision
+router.post('/log-decision', (req, res) => {
+    const { action, target, reasoning, confidence } = req.body;
+    
+    if (!action || !target || !reasoning) {
+        return res.status(400).json({ ok: false, error: 'Missing decision data.' });
+    }
+
+    const decision = {
+        timestamp: new Date().toISOString(),
+        action,
+        target,
+        reasoning,
+        confidence: confidence || 'N/A'
+    };
+    
+    hexstrikeState.decisionLog.push(decision);
+    hexstrikeState.missionLog.push(`[DECISION] ${action} on ${target}. Reason: ${reasoning.substring(0, 50)}...`);
+    
+    console.log(`[HEXSTRIKE] Decision logged: ${action} on ${target}`);
+    
+    res.json({ ok: true, decision });
 });
 
 // POST /api/hexstrike/analyze-pcap

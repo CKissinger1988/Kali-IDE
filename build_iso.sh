@@ -13,7 +13,7 @@ source lib/configure_user.sh
 ISO_PATH="/mnt/c/GitHub/kali-linux-2026.1-live-amd64.iso"
 STAGING_DIR="/opt/kali_remaster_staging"
 CHROOT_DIR="/opt/kali_chroot"
-OUTPUT_ISO="/mnt/c/GitHub/kali-linux-2026.1-ai-supreme.iso"
+OUTPUT_ISO="/mnt/d/kali-linux-2026.1-ai-supreme.iso"
 TOOLS_STAGING="/mnt/c/GitHub/ai_tools_staging"
 
 # User Credentials (injected via ENV)
@@ -58,10 +58,6 @@ cp -r security-audit-agent "$CHROOT_DIR/opt/kali-ide/"
 # 4. Installation Phase
 echo -e "\033[1;33m[*] Entering Chroot for AI Tool Integration...\033[0m"
 
-# Ensure dashboard is built before moving into chroot (or we can build it inside)
-echo "[*] Building Sovereign Dashboard..."
-(cd dashboard && npm install --silent && npm run build --silent)
-
 cat <<CHROOT_EOF | chroot "$CHROOT_DIR"
 set -xe
 
@@ -76,6 +72,12 @@ source /lib/sovereign_core.sh
 install_dependencies
 configure_user "$ADMIN_USER" "$ADMIN_PASS"
 install_ai_tools
+
+# Building Sovereign Dashboard inside chroot
+echo "[*] Building Sovereign Dashboard inside chroot..."
+cd /opt/kali-ide/dashboard
+npm install --silent
+npm run build --silent
 
 # Deploy the Sovereign Core (Dashboard + Orchestrator)
 deploy_sovereign_core
