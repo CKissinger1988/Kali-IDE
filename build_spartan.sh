@@ -4,20 +4,11 @@ set -xe
 # Load configuration if .env exists
 if [ -f .env ]; then
     source .env
-fi
-
-# Explicitly read ADMIN_PASS from secure temp file
-if [ -f "/tmp/admin_secret" ]; then
-    echo "[*] Reading ADMIN_PASS from /tmp/admin_secret"
-    export ADMIN_PASS=$(cat /tmp/admin_secret)
-    rm /tmp/admin_secret
-else
-    echo "[!] /tmp/admin_secret not found."
+    export ADMIN_PASS ISO_PATH OUTPUT_ISO
 fi
 
 # Debug: Check if variables were set
 echo "[*] ADMIN_PASS set? [${ADMIN_PASS:+yes}]"
-echo "[*] ADMIN_PASS length: ${#ADMIN_PASS}"
 
 # Final check
 if [ -z "$ADMIN_PASS" ]; then

@@ -28,18 +28,13 @@ jobs:
         env:
           ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
         run: |
-          # Write secret to a temporary file
-          echo "${{ secrets.ADMIN_PASS }}" > /tmp/admin_secret
-          chmod 600 /tmp/admin_secret
-
           # Generate config file for paths
           echo "ISO_PATH=kali-linux-2026.1-live-amd64.iso" > .env
           echo "OUTPUT_ISO=kali-linux-2026.1-spartanai.iso" >> .env
 
           chmod +x build_spartan.sh
-          # Run with sudo
-          sudo ./build_spartan.sh
-
+          # Run with sudo, passing ADMIN_PASS directly
+          sudo ADMIN_PASS="$ADMIN_PASS" ./build_spartan.sh
 
 
       - name: Create Release
