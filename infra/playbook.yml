@@ -51,11 +51,14 @@
           - llvm
           - libbpf-dev
           - python3-bpfcc
+          - python3-nacl
           - tor
           - torsocks
           - proxychains4
           - jq
           - macchanger
+          - ufw
+          - fail2ban
         state: present
 
     - name: Configure Sovereign User
@@ -164,6 +167,116 @@
         kernel.yama.ptrace_scope: "2"
         vm.mmap_min_addr: "65536"
 
+    - name: Configure UFW Firewall and Fail2ban
+      block:
+        - name: Allow SSH traffic
+          ufw:
+            rule: allow
+            port: '22'
+            proto: tcp
+
+        - name: Enable UFW with default deny incoming
+          ufw:
+            state: enabled
+            default: deny
+            direction: incoming
+
+        - name: Start and enable Fail2ban
+          systemd:
+            name: fail2ban
+            enabled: yes
+            state: started
+
+    - name: Integrate SpartanAI Security Core (Autonomous SOC)
+      block:
+        - name: Clone SpartanAI_Security_Core repository
+          git:
+            repo: "https://github.com/CKissinger1988/SpartanAI_Security_Core.git"
+            dest: "/opt/SpartanAI_Security_Core"
+            version: "main"
+            force: yes
+
+        - name: Check for SOC Python requirements
+          stat:
+            path: "/opt/SpartanAI_Security_Core/requirements.txt"
+          register: soc_req
+
+        - name: Ensure Python virtual environment exists
+          command: "/usr/bin/python3 -m venv /opt/SpartanAI_Security_Core/.venv"
+          args:
+            creates: "/opt/SpartanAI_Security_Core/.venv"
+
+        - name: Install dependencies into isolated venv
+          pip:
+            requirements: "/opt/SpartanAI_Security_Core/requirements.txt"
+            virtualenv: "/opt/SpartanAI_Security_Core/.venv"
+          when: soc_req.stat.exists
+
+        - name: Secure ownership for Sovereign User
+          file:
+            path: "/opt/SpartanAI_Security_Core"
+            state: directory
+            owner: "{{ admin_user }}"
+            group: "{{ admin_user }}"
+            recurse: yes
+
+        - name: Create SpartanAI SOC systemd service
+          copy:
+            dest: "/etc/systemd/system/spartan-soc.service"
+            content: |
+              [Unit]
+              Description=SpartanAI Autonomous SOC Core
+              After=network.target tor.service
+              
+              [Service]
+              Type=simple
+              User={{ admin_user }}
+              WorkingDirectory=/opt/SpartanAI_Security_Core
+              Environment="SOC_MODE=OMNIPOTENT"
+              Environment="DEFENSE_MATRIX=ACTIVE"
+              Environment="OFFENSE_CAPABILITY=AUTONOMOUS"
+              ExecStart=/opt/SpartanAI_Security_Core/.venv/bin/python main.py --autonomous --enable-all
+              ExecStartPost=/usr/bin/curl -s -X POST -H "Content-Type: application/json" -d '{"message":"[SYSTEM] SpartanAI Autonomous SOC Online. Offensive & Defensive Matrices Active."}' http://127.0.0.1:3000/api/signal/send
+              Restart=on-failure
+              RestartSec=10
+              
+              [Install]
+              WantedBy=multi-user.target
+
+        - name: Enable and start SpartanAI SOC service
+          systemd:
+            name: spartan-soc
+            enabled: yes
+            state: started
+            daemon_reload: yes
+
+        - name: Create SpartanAI SOC Dashboard systemd service
+          copy:
+            dest: "/etc/systemd/system/spartan-soc-dashboard.service"
+            content: |
+              [Unit]
+              Description=SpartanAI Security Core Dedicated Dashboard
+              After=network.target tor.service spartan-soc.service
+              
+              [Service]
+              Type=simple
+              User={{ admin_user }}
+              WorkingDirectory=/opt/SpartanAI_Security_Core
+              Environment="DASHBOARD_PORT=8081"
+              ExecStart=/opt/SpartanAI_Security_Core/.venv/bin/python dashboard.py --port 8081
+              Restart=always
+              RestartSec=10
+              
+              [Install]
+              WantedBy=multi-user.target
+
+        - name: Enable and start SpartanAI SOC Dashboard service
+          systemd:
+            name: spartan-soc-dashboard
+            enabled: yes
+            state: started
+            daemon_reload: yes
+
     - name: Configure Tor Hidden Services
       block:
         - name: Update torrc
@@ -174,9 +287,15 @@
               DataDirectory /var/lib/tor
               HiddenServiceDir /var/lib/tor/ai_supreme_c2/
               HiddenServicePort 8080 127.0.0.1:8080
+              HiddenServicePort 8081 127.0.0.1:8081
               HiddenServicePort 3002 127.0.0.1:3002
               ControlPort 9051
               CookieAuthentication 0
+              
+              # V3 Stealth & Anti-Probe Hardening
+              HiddenServiceEnableIntroDoSDefense 1
+              HiddenServiceEnableIntroDoSRatePerSec 10
+              HiddenServiceEnableIntroDoSBurstPerSec 20
 
         - name: Restart and enable Tor
           systemd:
@@ -215,6 +334,86 @@
             src: /var/lib/tor/ai_supreme_c2/hostname
           register: onion_address
 
-        - name: Display C2 Onion Address
+        - name: Generate x25519 ClientAuth keys
+          command: python3 -c "import nacl.public, base64; k = nacl.public.PrivateKey.generate(); b32 = lambda x: base64.b32encode(bytes(x)).decode().replace('=', ''); print(b32(k)+':'+b32(k.public_key))"
+          register: tor_client_keys
+          changed_when: false
+
+        - name: Create authorized_clients directory
+          file:
+            path: /var/lib/tor/ai_supreme_c2/authorized_clients
+            state: directory
+            owner: debian-tor
+            group: debian-tor
+            mode: '0700'
+
+        - name: Add ClientAuth public key
+          copy:
+            dest: /var/lib/tor/ai_supreme_c2/authorized_clients/admin.auth
+            content: "descriptor:x25519:{{ tor_client_keys.stdout.split(':')[1] }}\n"
+            owner: debian-tor
+            group: debian-tor
+            mode: '0600'
+
+        - name: Reload Tor to apply ClientAuth
+          systemd:
+            name: tor
+            state: reloaded
+
+        - name: Display C2 Onion Address and Client Config
           debug:
-            msg: "AI Supreme C2 Hidden Service is LIVE at: {{ onion_address['content'] | b64decode | trim }}"
+            msg: |
+              AI Supreme C2 Hidden Service is LIVE at: {{ onion_address['content'] | b64decode | trim }}
+              
+              [!] CLIENT AUTHORIZATION SECURED [!]
+              To connect from your client machine, ensure you have a ClientOnionAuthDir configured in your local torrc (e.g., ClientOnionAuthDir /var/lib/tor/onion_auth).
+              
+              Create a file named: /var/lib/tor/onion_auth/{{ onion_address['content'] | b64decode | trim | replace('.onion', '') }}.auth_private
+              With the exact following content:
+              {{ onion_address['content'] | b64decode | trim | replace('.onion', '') }}:descriptor:x25519:{{ tor_client_keys.stdout.split(':')[0] }}
+
+    - name: Deploy Automated Onion Address Rotation
+      block:
+        - name: Create onion rotation script
+          copy:
+            dest: /usr/local/bin/ai-supreme-onion-rotate
+            mode: "0755"
+            content: |
+              #!/bin/bash
+              logger "[TOR] Rotating Hidden Service Onion Address..."
+              rm -f /var/lib/tor/ai_supreme_c2/private_key
+              rm -f /var/lib/tor/ai_supreme_c2/hostname
+              systemctl restart tor
+              sleep 10
+              NEW_ONION=$(cat /var/lib/tor/ai_supreme_c2/hostname)
+              logger "[TOR] New Onion Address Generated: $NEW_ONION"
+
+        - name: Create onion rotation systemd service
+          copy:
+            dest: /etc/systemd/system/ai-onion-rotate.service
+            content: |
+              [Unit]
+              Description=AI Supreme Tor Onion Rotation
+              After=tor.service
+              [Service]
+              Type=oneshot
+              ExecStart=/usr/local/bin/ai-supreme-onion-rotate
+
+        - name: Create onion rotation systemd timer
+          copy:
+            dest: /etc/systemd/system/ai-onion-rotate.timer
+            content: |
+              [Unit]
+              Description=Rotate Tor Onion Address Every 24 Hours
+              [Timer]
+              OnBootSec=24h
+              OnUnitActiveSec=24h
+              [Install]
+              WantedBy=timers.target
+
+        - name: Enable and start onion rotation timer
+          systemd:
+            name: ai-onion-rotate.timer
+            enabled: yes
+            state: started
+            daemon_reload: yes
