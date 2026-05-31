@@ -9,21 +9,22 @@ fi
 
 # Load secret from argument file if provided
 if [ -n "$1" ]; then
+    echo "[*] Argument 1 provided: '$1'"
     if [ -f "$1" ]; then
-        echo "[*] Reading ADMIN_PASS from $1"
-        ADMIN_PASS=$(cat "$1")
-        if [ $? -ne 0 ]; then
-            echo -e "[!] Error: Failed to read secret file $1"
+        echo "[*] File $1 exists."
+        if [ -r "$1" ]; then
+            echo "[*] File $1 is readable."
+            ADMIN_PASS=$(cat "$1")
+            echo "[*] ADMIN_PASS read: [${#ADMIN_PASS} chars]"
+            export ADMIN_PASS
+            rm "$1"
+        else
+            echo "[!] Error: File $1 is not readable. User: $(whoami)"
             exit 1
         fi
-        if [ -z "$ADMIN_PASS" ]; then
-            echo -e "[!] Error: Secret file $1 is empty"
-            exit 1
-        fi
-        export ADMIN_PASS
-        rm "$1"
     else
         echo -e "[!] Error: Secret file $1 not found at path $(pwd)"
+        ls -la
         exit 1
     fi
 fi
