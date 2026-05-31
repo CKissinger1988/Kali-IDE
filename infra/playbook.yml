@@ -210,7 +210,7 @@
           systemd:
             name: fail2ban
             enabled: yes
-            state: started
+            state: restarted
 
     - name: Integrate SpartanAI Security Core (Autonomous SOC)
       block:

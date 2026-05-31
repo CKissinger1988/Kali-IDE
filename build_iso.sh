@@ -34,12 +34,33 @@ fi
 
 setup_mounts "$CHROOT_DIR"
 
+# Ensure mounts are safely torn down if the script fails or exits unexpectedly
+trap 'echo -e "\033[1;33m[*] Cleaning up mounts...\033[0m"; teardown_mounts "$CHROOT_DIR" || true' EXIT ERR
+
 # Copy libraries into chroot
 mkdir -p "$CHROOT_DIR/lib"
 cp -r lib/* "$CHROOT_DIR/lib/"
 
+# Copy entire codebase for sovereign core installation
+echo "[*] Staging Sovereign Core codebase..."
+mkdir -p "$CHROOT_DIR/opt/kali-ide"
+# Copy all relevant files (avoiding node_modules, .git, etc. if possible but for simplicity let's use rsync or selective cp)
+cp -r src "$CHROOT_DIR/opt/kali-ide/"
+cp -r dashboard "$CHROOT_DIR/opt/kali-ide/"
+cp api_*.js "$CHROOT_DIR/opt/kali-ide/"
+cp package*.json "$CHROOT_DIR/opt/kali-ide/"
+cp *.sh "$CHROOT_DIR/opt/kali-ide/"
+cp README.md "$CHROOT_DIR/opt/kali-ide/"
+cp -r lib "$CHROOT_DIR/opt/kali-ide/"
+cp -r hexstrike-ai "$CHROOT_DIR/opt/kali-ide/"
+cp -r security-audit-agent "$CHROOT_DIR/opt/kali-ide/"
+
 # 4. Installation Phase
 echo -e "\033[1;33m[*] Entering Chroot for AI Tool Integration...\033[0m"
+
+# Ensure dashboard is built before moving into chroot (or we can build it inside)
+echo "[*] Building Sovereign Dashboard..."
+(cd dashboard && npm install --silent && npm run build --silent)
 
 cat <<CHROOT_EOF | chroot "$CHROOT_DIR"
 set -xe
@@ -50,15 +71,25 @@ echo "deb http://http.kali.org/kali kali-rolling main contrib non-free non-free-
 # Load functions for chroot usage
 source /lib/install_dependencies.sh
 source /lib/configure_user.sh
+source /lib/sovereign_core.sh
 
 install_dependencies
 configure_user "$ADMIN_USER" "$ADMIN_PASS"
 install_ai_tools
 
-# ... (Include other system configurations here from original script)
-CHROOT_EOF
+# Deploy the Sovereign Core (Dashboard + Orchestrator)
+deploy_sovereign_core
 
-teardown_mounts "$CHROOT_DIR"
+# 5. Purify Phase (Cleanup)
+echo "[*] Purifying the Sovereign Core environment..."
+rm -rf /opt/kali-ide/dashboard/node_modules
+rm -rf /opt/kali-ide/dashboard/src
+rm -rf /opt/kali-ide/src/**/*.ts # We use tsx but if we wanted to be ultra-clean we'd compile to JS
+# For now, let's keep it simple and just remove obvious dev junk
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+CHROOT_EOF
 
 # 8. Repack SquashFS
 echo -e "\033[1;33m[*] Repacking SquashFS...\033[0m"

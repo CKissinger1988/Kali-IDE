@@ -169,7 +169,7 @@ const AppsFloatingWindow = memo(({ isOpen, onClose, referenceElement }: Floating
                     });
                 setApps(localApps);
             } catch (error) {
-                console.error("Failed to fetch apps:", error);
+                
                 setApps([]);
             } finally {
                 setLoading(false);

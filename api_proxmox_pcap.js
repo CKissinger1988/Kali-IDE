@@ -22,27 +22,44 @@ router.post('/pcap', async (req, res) => {
     const outputFile = `/tmp/${outputFilename}`;
     const durationSec = parseInt(duration, 10);
 
-    // TODO: Transition to eBPF tap for invisibility
-    console.log(`[NETWORK-TAP] Initiating secure tap on ${node} for VM ${vmid}...`);
+    // Use eBPF Shadow Tap for invisibility if available
+    const shadowTapScript = path.join(__dirname, 'lib', 'shadow_pcap.py');
+    const useShadow = require('fs').existsSync(shadowTapScript);
 
-    // Using execFile to prevent shell command injection
-    // Note: This still assumes tshark is available on the target node.
-    execFile('tshark', [
-        '-i', iface, 
-        '-a', `duration:${durationSec}`, 
-        '-w', outputFile
-    ], (error, stdout, stderr) => {
-        if (error) {
-            console.error(`[NETWORK-TAP] Error tapping VM ${vmid}: ${error.message}`);
-            return res.status(500).json({ ok: false, error: 'Hypervisor tap execution failed.' });
-        }
+    console.log(`[NETWORK-TAP] Initiating ${useShadow ? 'SHADOW' : 'SECURE'} tap on ${node} for VM ${vmid}...`);
 
-        res.json({
-            ok: true,
-            file: outputFile,
-            message: 'Capture completed securely.'
+    if (useShadow) {
+        execFile('python3', [
+            shadowTapScript,
+            '-i', iface,
+            '-d', durationSec,
+            '-o', outputFile
+        ], (error, stdout, stderr) => {
+            if (error) {
+                
+                return res.status(500).json({ ok: false, error: 'Shadow tap execution failed.' });
+            }
+            res.json({ ok: true, file: outputFile, message: 'Invisible shadow capture completed.' });
         });
-    });
+    } else {
+        // Fallback to tshark
+        execFile('tshark', [
+            '-i', iface, 
+            '-a', `duration:${durationSec}`, 
+            '-w', outputFile
+        ], (error, stdout, stderr) => {
+            if (error) {
+                
+                return res.status(500).json({ ok: false, error: 'Hypervisor tap execution failed.' });
+            }
+
+            res.json({
+                ok: true,
+                file: outputFile,
+                message: 'Capture completed securely.'
+            });
+        });
+    }
 });
 
 // POST /api/proxmox/vm/analyze-pcap
@@ -65,7 +82,7 @@ router.post('/analyze-pcap', async (req, res) => {
     // Execute tshark with the credentials plugin enabled
     execFile('tshark', ['-r', resolvedPath, '-q', '-z', 'credentials'], (error, stdout, stderr) => {
         if (error) {
-            console.error(`[HEXSTRIKE] Tshark analysis failed: ${error.message}`);
+            
             return res.status(500).json({ ok: false, error: 'Tshark analysis execution failed.' });
         }
 

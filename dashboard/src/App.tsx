@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import MainPanel from './components/MainPanel';
 import Header from './components/Header';
@@ -7,7 +7,7 @@ import ManifestoModal from './components/modals/ManifestoModal';
 
 function App() {
   const [activeTab, setActiveTab] = useState('chat');
-  const [strike, setStrike] = useState({ active: false, progress: 0, log: [] });
+  const [strike] = useState({ active: false, progress: 0, log: [] });
   const [manifestoOpen, setManifestoOpen] = useState(false);
 
   return (

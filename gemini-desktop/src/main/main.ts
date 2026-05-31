@@ -27,7 +27,7 @@ import { createLogger } from './utils/logger';
 // Setup Logger
 const logger = createLogger('[Main]');
 
-// Log critical environment info early for CI debugging
+
 logger.debug('=== ELECTRON STARTUP DEBUG INFO ===');
 logger.debug('Platform:', process.platform);
 logger.debug('DISPLAY:', process.env.DISPLAY || 'NOT SET');
@@ -274,7 +274,7 @@ function gracefulShutdown(exitCode: number = 0): void {
         logger.log('Graceful shutdown completed');
     } catch (cleanupError) {
         // Log cleanup errors but don't throw - we still need to exit
-        console.error('[Main] Error during graceful shutdown:', cleanupError);
+        
     }
 
     // Give logs time to flush, then exit
@@ -315,7 +315,7 @@ if (!gotTheLock) {
     logger.debug('Setting up app.whenReady() handler');
     logger.debug('Current app.isReady():', app.isReady());
 
-    // Also listen to the 'ready' event directly for debugging
+    
     app.on('ready', () => {
         logger.debug('app "ready" event fired!');
     });
@@ -526,7 +526,7 @@ process.on('uncaughtException', (error) => {
     });
 
     // Also log to console as a backup in case logger fails
-    console.error('[Main] FATAL: Uncaught Exception:', error);
+    
 
     // Perform graceful shutdown
     gracefulShutdown(1);

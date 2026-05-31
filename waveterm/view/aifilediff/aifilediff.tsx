@@ -106,7 +106,7 @@ function AiFileDiffView({ blockId, model }: ViewComponentProps<AiFileDiffViewMod
                 });
                 globalStore.set(model.loadingAtom, false);
             } catch (e) {
-                console.error("Error loading diff data:", e);
+                
                 globalStore.set(model.errorAtom, `Error loading diff data: ${e.message}`);
                 globalStore.set(model.loadingAtom, false);
             }

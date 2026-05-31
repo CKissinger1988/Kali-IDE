@@ -1,8 +1,13 @@
-import React from 'react';
 import TerminalConsole from './panels/TerminalConsole';
 import CloudInfrastructure from './panels/CloudInfrastructure';
 import MsfSessions from './panels/MsfSessions';
 import SecurityIntelligence from './panels/SecurityIntelligence';
+import TorScraper from './panels/TorScraper';
+import GhostTactical from './panels/GhostTactical';
+import MeshMonitor from './panels/MeshMonitor';
+import MissionControl from './panels/MissionControl';
+import PhishingOperations from './panels/PhishingOperations';
+import { ServerSettings } from './ServerSettings';
 
 interface MainPanelProps {
   activeTab: string;
@@ -15,6 +20,12 @@ export default function MainPanel({ activeTab }: MainPanelProps) {
       case 'hosting': return <CloudInfrastructure />;
       case 'msf': return <MsfSessions />;
       case 'security': return <SecurityIntelligence />;
+      case 'ghost': return <GhostTactical />;
+      case 'mesh': return <MeshMonitor />;
+      case 'missions': return <MissionControl />;
+      case 'phishing': return <PhishingOperations />;
+      case 'scraper': return <TorScraper />;
+      case 'settings': return <ServerSettings />;
       default: return <div className="text-[#8e8e8e]">Panel for {activeTab} in development...</div>;
     }
   };

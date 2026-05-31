@@ -11,7 +11,7 @@ export function addOpenMenuItems(menu: ContextMenuItem[], conn: string, finfo: F
         type: "separator",
     });
     if (!conn) {
-        // TODO:  resolve correct host path if connection is WSL
+        
         // if the entry is a directory, reveal it in the file manager, if the entry is a file, reveal its parent directory
         menu.push({
             label: makeNativeLabel(true),

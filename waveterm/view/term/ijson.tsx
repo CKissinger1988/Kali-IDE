@@ -81,7 +81,7 @@ TagMap["option"] = IJsonHtmlTag;
 TagMap["form"] = IJsonHtmlTag;
 
 function IJsonView({ rootNode }: { rootNode: IJsonNode }) {
-    // TODO fix this huge inline style
+    
     return (
         <div className="ijson">
             <Frame>

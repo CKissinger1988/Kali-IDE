@@ -19,25 +19,31 @@ api_call() {
 case "\$1" in
     strike)
         echo "[JARVIS] Authorized. Initiating Neural Strike against \$2..."
-        api_call "/api/enqueue" "POST" "{\"tool\":\"neural-strike\",\"target\":\"\$2\",\"stealth\":true}" | jq .
+        local payload=\$(jq -n --arg target "\$2" '{"tool":"neural-strike","target":\$target,"stealth":true}')
+        api_call "/api/enqueue" "POST" "\$payload" | jq .
         ;;
     recon)
         echo "[JARVIS] Launching autonomous recon pipeline against \$2..."
-        api_call "/api/enqueue" "POST" "{\"tool\":\"subfinder\",\"target\":\"\$2\",\"stealth\":true}" > /dev/null
-        api_call "/api/enqueue" "POST" "{\"tool\":\"httpx\",\"target\":\"\$2\",\"stealth\":true}" > /dev/null
+        local payload_sub=\$(jq -n --arg target "\$2" '{"tool":"subfinder","target":\$target,"stealth":true}')
+        local payload_httpx=\$(jq -n --arg target "\$2" '{"tool":"httpx","target":\$target,"stealth":true}')
+        api_call "/api/enqueue" "POST" "\$payload_sub" > /dev/null
+        api_call "/api/enqueue" "POST" "\$payload_httpx" > /dev/null
         echo "[JARVIS] Recon payload dispatched to Mesh."
         ;;
     loot)
         echo "[JARVIS] Exfiltrating '\$3' from VM \$2 via hypervisor out-of-band..."
-        api_call "/api/proxmox/vm/read" "POST" "{\"node\":\"pve\",\"vmid\":\"\$2\",\"path\":\"\$3\"}" | jq -r '.content // .error'
+        local payload=\$(jq -n --arg vmid "\$2" --arg path "\$3" '{"node":"pve","vmid":\$vmid,"path":\$path}')
+        api_call "/api/proxmox/vm/read" "POST" "\$payload" | jq -r '.content // .error'
         ;;
     exec)
         echo "[JARVIS] Executing '\$3' on VM \$2 via QEMU guest agent..."
-        api_call "/api/proxmox/vm/exec" "POST" "{\"node\":\"pve\",\"vmid\":\"\$2\",\"command\":\"\$3\"}" | jq .
+        local payload=\$(jq -n --arg vmid "\$2" --arg cmd "\$3" '{"node":"pve","vmid":\$vmid,"command":\$cmd}')
+        api_call "/api/proxmox/vm/exec" "POST" "\$payload" | jq .
         ;;
     pcap)
         echo "[JARVIS] Initiating invisible hypervisor network tap on VM \$2 for \$3 seconds..."
-        api_call "/api/proxmox/vm/pcap" "POST" "{\"node\":\"pve\",\"vmid\":\"\$2\",\"duration\":\$3}" | jq .
+        local payload=\$(jq -n --arg vmid "\$2" --argjson duration "\${3:-60}" '{"node":"pve","vmid":\$vmid,"duration":\$duration}')
+        api_call "/api/proxmox/vm/pcap" "POST" "\$payload" | jq .
         ;;
     fortify)
         echo "[JARVIS] Mesh Fortification Sequence Active..."
@@ -49,12 +55,14 @@ case "\$1" in
         ;;
     signal)
         echo "[JARVIS] Sending secure Signal ping..."
-        api_call "/api/signal/send" "POST" "{\"message\":\"\$2\"}" | jq .
+        local payload=\$(jq -n --arg msg "\$2" '{"message":\$msg}')
+        api_call "/api/signal/send" "POST" "\$payload" | jq .
         ;;
     ponder)
         shift
         echo "[JARVIS] Consulting SpartanAI Strategic Core..."
-        api_call "/api/ponder" "POST" "{\"prompt\":\"\$*\",\"sector\":\"good\"}" | jq -r '.result // .error'
+        local payload=\$(jq -n --arg prompt "\$*" '{"prompt":\$prompt,"sector":"good"}')
+        api_call "/api/ponder" "POST" "\$payload" | jq -r '.result // .error'
         ;;
     vanish|purge)
         echo "[JARVIS] Scrubbing all traces..."

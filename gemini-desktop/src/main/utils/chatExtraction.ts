@@ -99,7 +99,7 @@ export const CHAT_EXTRACTION_SCRIPT = `
             }
         };
     } catch (err) {
-        console.error('[Extraction Error]', err);
+        
         return {
             title: 'Error',
             timestamp: new Date().toISOString(),

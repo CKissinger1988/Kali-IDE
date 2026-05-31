@@ -7,7 +7,7 @@ import * as csstree from "css-tree";
 
 const TextTag = "#text";
 
-// TODO support binding
+
 export function getTextChildren(elem: VDomElem): string {
     if (elem.tag == TextTag) {
         return elem.text;
@@ -75,8 +75,8 @@ export function validateAndWrapCss(model: VDomModel, cssText: string, wrapperCla
         const sanitizedCss = csstree.generate(ast);
         return `.${wrapperClassName} { ${sanitizedCss} }`;
     } catch (error) {
-        // TODO better error handling
-        console.error("CSS processing error:", error);
+        
+        
         return null;
     }
 }
@@ -106,7 +106,7 @@ function cssTransformStyleValue(model: VDomModel, property: string, value: strin
 
         return csstree.generate(ast);
     } catch (error) {
-        console.error("Error processing style value:", error);
+        
         return value;
     }
 }
@@ -175,7 +175,7 @@ export function restoreVDomElems(backendUpdate: VDomBackendUpdate) {
 export function mergeBackendUpdates(baseUpdate: VDomBackendUpdate, nextUpdate: VDomBackendUpdate) {
     // Verify the updates are from the same block/sequence
     if (baseUpdate.blockid !== nextUpdate.blockid || baseUpdate.ts !== nextUpdate.ts) {
-        console.error("Attempted to merge updates from different blocks or timestamps");
+        
         return;
     }
 
@@ -199,7 +199,7 @@ export function mergeBackendUpdates(baseUpdate: VDomBackendUpdate, nextUpdate: V
 export function applyCanvasOp(canvas: HTMLCanvasElement, canvasOp: VDomRefOperation, refStore: Map<string, any>) {
     const ctx = canvas.getContext("2d");
     if (!ctx) {
-        console.error("Canvas 2D context not available.");
+        
         return;
     }
 
@@ -222,7 +222,7 @@ export function applyCanvasOp(canvas: HTMLCanvasElement, canvasOp: VDomRefOperat
             if (Array.isArray(arrayRef)) {
                 resolvedParams.push(...arrayRef); // Spread array elements
             } else {
-                console.error(`Reference ${refId} is not an array and cannot be spread.`);
+                
             }
         } else {
             resolvedParams.push(param);
@@ -239,6 +239,6 @@ export function applyCanvasOp(canvas: HTMLCanvasElement, canvasOp: VDomRefOperat
     } else if (op in ctx) {
         (ctx as any)[op] = resolvedParams[0];
     } else {
-        console.error(`Unsupported canvas operation: ${op}`);
+        
     }
 }

@@ -56,7 +56,7 @@ function getPath(obj: any, path: PathType): any {
                 return null;
             }
         } else {
-            throw new Error("Invalid path part: " + pathPart);
+            
         }
     }
     return cur;
@@ -73,7 +73,7 @@ function combineFn_arrayAppend(oldVal: any, newVal: any, opts: SetPathOpts): any
         return [newVal];
     }
     if (!isArray(oldVal) && !opts.force) {
-        throw new Error("Cannot append to non-array: " + oldVal);
+        
     }
     if (!isArray(oldVal)) {
         return [newVal];
@@ -99,13 +99,13 @@ function setPath(obj: any, path: PathType, value: any, opts: SetPathOpts) {
         opts = {};
     }
     if (opts.remove && value != null) {
-        throw new Error("Cannot set value and remove at the same time");
+        
     }
     if (path == null) {
         path = [];
     }
     if (!checkPath(path)) {
-        throw new Error("Invalid path: " + formatPath(path));
+        );
     }
     return setPathInternal(obj, path, value, opts);
 }
@@ -161,7 +161,7 @@ function setPathInternal(obj: any, path: PathType, value: any, opts: SetPathOpts
             if (opts.force) {
                 obj = {};
             } else {
-                throw new Error("Cannot set path on non-object: " + obj);
+                
             }
         }
         if (opts.remove && path.length == 1) {
@@ -183,7 +183,7 @@ function setPathInternal(obj: any, path: PathType, value: any, opts: SetPathOpts
         return obj;
     } else if (typeof pathPart === "number") {
         if (pathPart < 0 || !Number.isInteger(pathPart)) {
-            throw new Error("Invalid path part: " + pathPart);
+            
         }
         if (obj == null) {
             if (opts.remove) {
@@ -195,7 +195,7 @@ function setPathInternal(obj: any, path: PathType, value: any, opts: SetPathOpts
             if (opts.force) {
                 obj = [];
             } else {
-                throw new Error("Cannot set path on non-array: " + obj);
+                
             }
         }
         if (opts.remove && path.length == 1) {
@@ -208,7 +208,7 @@ function setPathInternal(obj: any, path: PathType, value: any, opts: SetPathOpts
         obj[pathPart] = newVal;
         return obj;
     } else {
-        throw new Error("Invalid path part: " + pathPart);
+        
     }
 }
 
@@ -221,18 +221,18 @@ function getCommandPath(command: object): PathType {
 
 function applyCommand(data: any, command: any): any {
     if (command == null) {
-        throw new Error("Invalid command (null)");
+        ");
     }
     if (!isObject(command)) {
-        throw new Error("Invalid command (not an object): " + command);
+        : " + command);
     }
     const commandType = command.type;
     if (commandType == null) {
-        throw new Error("Invalid command (no type): " + command);
+        : " + command);
     }
     const path = getCommandPath(command);
     if (!checkPath(path)) {
-        throw new Error("Invalid command path: " + formatPath(path));
+        );
     }
     switch (commandType) {
         case "set":
@@ -245,7 +245,7 @@ function applyCommand(data: any, command: any): any {
             return setPath(data, path, command.value, { combinefn: combineFn_arrayAppend });
 
         default:
-            throw new Error("Invalid command type: " + commandType);
+            
     }
 }
 

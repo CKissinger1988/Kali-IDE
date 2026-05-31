@@ -44,16 +44,16 @@ export function computeMoveNode(layoutState: LayoutTreeState, computeInsertActio
     const rootNode = layoutState.rootNode;
     const { nodeId, nodeToMoveId, direction } = computeInsertAction;
     if (!nodeId || !nodeToMoveId) {
-        console.warn("either nodeId or nodeToMoveId not set", nodeId, nodeToMoveId);
+        
         return;
     }
     if (direction === undefined) {
-        console.warn("No direction provided for insertItemInDirection");
+        
         return;
     }
 
     if (nodeId === nodeToMoveId) {
-        console.warn("Cannot compute move node action since both nodes are equal");
+        
         return;
     }
 
@@ -68,12 +68,12 @@ export function computeMoveNode(layoutState: LayoutTreeState, computeInsertActio
     );
     const isRoot = rootNode.id === nodeId;
 
-    // TODO: this should not be necessary. The drag layer is having trouble tracking changes to the LayoutNode fields, so I need to grab the node again here to get the latest data.
+    
     const node = findNode(rootNode, nodeId);
     const nodeToMove = findNode(rootNode, nodeToMoveId);
 
     if (!node || !nodeToMove) {
-        console.warn("node or nodeToMove not set", nodeId, nodeToMoveId);
+        
         return;
     }
 
@@ -209,11 +209,11 @@ export function computeMoveNode(layoutState: LayoutTreeState, computeInsertActio
                 };
                 return swapAction;
             } else {
-                console.warn("cannot swap");
+                
             }
             break;
         default:
-            throw new Error(`Invalid direction: ${direction}`);
+            
     }
 
     if (
@@ -231,11 +231,11 @@ export function moveNode(layoutState: LayoutTreeState, action: LayoutTreeMoveNod
     console.log("moveNode", layoutState, action);
     const rootNode = layoutState.rootNode;
     if (!action) {
-        console.error("no move node action provided");
+        
         return;
     }
     if (action.parentId && action.insertAtRoot) {
-        console.error("parent and insertAtRoot cannot both be defined in a move node action");
+        
         return;
     }
 
@@ -267,7 +267,7 @@ export function moveNode(layoutState: LayoutTreeState, action: LayoutTreeMoveNod
     } else if (parent) {
         addChildAt(parent, action.index, node);
     } else {
-        throw new Error("Invalid InsertOperation");
+        
     }
 
     // Remove nodeToInsert from its old parent
@@ -278,7 +278,7 @@ export function moveNode(layoutState: LayoutTreeState, action: LayoutTreeMoveNod
 
 export function insertNode(layoutState: LayoutTreeState, action: LayoutTreeInsertNodeAction) {
     if (!action?.node) {
-        console.error("insertNode cannot run, no insert node action provided");
+        
         return;
     }
     if (!layoutState.rootNode) {
@@ -298,7 +298,7 @@ export function insertNode(layoutState: LayoutTreeState, action: LayoutTreeInser
 
 export function insertNodeAtIndex(layoutState: LayoutTreeState, action: LayoutTreeInsertNodeAtIndexAction) {
     if (!action?.node || !action?.indexArr) {
-        console.error("insertNodeAtIndex cannot run, either node or indexArr field is missing");
+        
         return;
     }
     if (!layoutState.rootNode) {
@@ -306,7 +306,7 @@ export function insertNodeAtIndex(layoutState: LayoutTreeState, action: LayoutTr
     } else {
         const insertLoc = findInsertLocationFromIndexArr(layoutState.rootNode, action.indexArr);
         if (!insertLoc) {
-            console.error("insertNodeAtIndex unable to find insert location");
+            
             return;
         }
         addChildAt(insertLoc.node, insertLoc.index + 1, action.node);
@@ -322,16 +322,16 @@ export function insertNodeAtIndex(layoutState: LayoutTreeState, action: LayoutTr
 
 export function swapNode(layoutState: LayoutTreeState, action: LayoutTreeSwapNodeAction) {
     if (!action.node1Id || !action.node2Id) {
-        console.error("invalid swapNode action, both node1 and node2 must be defined");
+        
         return;
     }
 
     if (action.node1Id === layoutState.rootNode.id || action.node2Id === layoutState.rootNode.id) {
-        console.error("invalid swapNode action, the root node cannot be swapped");
+        
         return;
     }
     if (action.node1Id === action.node2Id) {
-        console.error("invalid swapNode action, node1 and node2 are equal");
+        
         return;
     }
 
@@ -353,11 +353,11 @@ export function swapNode(layoutState: LayoutTreeState, action: LayoutTreeSwapNod
 
 export function deleteNode(layoutState: LayoutTreeState, action: LayoutTreeDeleteNodeAction) {
     if (!action?.nodeId) {
-        console.error("no delete node action provided");
+        
         return;
     }
     if (!layoutState.rootNode) {
-        console.error("no root node");
+        
         return;
     }
     if (layoutState.rootNode.id === action.nodeId) {
@@ -371,18 +371,18 @@ export function deleteNode(layoutState: LayoutTreeState, action: LayoutTreeDelet
                 layoutState.focusedNodeId = undefined;
             }
         } else {
-            console.error("unable to delete node, not found in tree");
+            
         }
     }
 }
 
 export function resizeNode(layoutState: LayoutTreeState, action: LayoutTreeResizeNodeAction) {
     if (!action.resizeOperations) {
-        console.error("invalid resizeNode operation. nodeSizes array must be defined.");
+        
     }
     for (const resize of action.resizeOperations) {
         if (!resize.nodeId || resize.size < 0 || resize.size > 100) {
-            console.error("invalid resizeNode operation. nodeId must be defined and size must be between 0 and 100");
+            
             return;
         }
         const node = findNode(layoutState.rootNode, resize.nodeId);
@@ -392,7 +392,7 @@ export function resizeNode(layoutState: LayoutTreeState, action: LayoutTreeResiz
 
 export function focusNode(layoutState: LayoutTreeState, action: LayoutTreeFocusNodeAction) {
     if (!action.nodeId) {
-        console.error("invalid focusNode operation, nodeId must be defined.");
+        
         return;
     }
 
@@ -401,11 +401,11 @@ export function focusNode(layoutState: LayoutTreeState, action: LayoutTreeFocusN
 
 export function magnifyNodeToggle(layoutState: LayoutTreeState, action: LayoutTreeMagnifyNodeToggleAction) {
     if (!action.nodeId) {
-        console.error("invalid magnifyNodeToggle operation. nodeId must be defined.");
+        
         return;
     }
     if (layoutState.rootNode.id === action.nodeId) {
-        console.warn(`cannot toggle magnification of node ${action.nodeId} because it is the root node.`);
+        
         return;
     }
     if (layoutState.magnifiedNodeId === action.nodeId) {
@@ -431,12 +431,12 @@ export function replaceNode(layoutState: LayoutTreeState, action: LayoutTreeRepl
     } else {
         const parent = findParent(layoutState.rootNode, targetNodeId);
         if (!parent) {
-            console.error("replaceNode: Parent not found for", targetNodeId);
+            
             return;
         }
         const index = parent.children.findIndex((child) => child.id === targetNodeId);
         if (index === -1) {
-            console.error("replaceNode: Target node not found in parent's children", targetNodeId);
+            
             return;
         }
         // Preserve the old node's size.
@@ -455,7 +455,7 @@ export function splitHorizontal(layoutState: LayoutTreeState, action: LayoutTree
     const { targetNodeId, newNode, position } = action;
     const targetNode = findNode(layoutState.rootNode, targetNodeId);
     if (!targetNode) {
-        console.error("splitHorizontal: Target node not found", targetNodeId);
+        
         return;
     }
 
@@ -463,7 +463,7 @@ export function splitHorizontal(layoutState: LayoutTreeState, action: LayoutTree
     if (parent && parent.flexDirection === FlexDirection.Row) {
         const index = parent.children.findIndex((child) => child.id === targetNodeId);
         if (index === -1) {
-            console.error("splitHorizontal: Target node not found in parent's children", targetNodeId);
+            
             return;
         }
         const insertIndex = position === "before" ? index : index + 1;
@@ -479,7 +479,7 @@ export function splitHorizontal(layoutState: LayoutTreeState, action: LayoutTree
         if (parent) {
             const index = parent.children.findIndex((child) => child.id === targetNodeId);
             if (index === -1) {
-                console.error("splitHorizontal (wrap): Target node not found in parent's children", targetNodeId);
+                : Target node not found in parent's children", targetNodeId);
                 return;
             }
             parent.children[index] = groupNode;
@@ -498,7 +498,7 @@ export function splitVertical(layoutState: LayoutTreeState, action: LayoutTreeSp
     const { targetNodeId, newNode, position } = action;
     const targetNode = findNode(layoutState.rootNode, targetNodeId);
     if (!targetNode) {
-        console.error("splitVertical: Target node not found", targetNodeId);
+        
         return;
     }
 
@@ -506,7 +506,7 @@ export function splitVertical(layoutState: LayoutTreeState, action: LayoutTreeSp
     if (parent && parent.flexDirection === FlexDirection.Column) {
         const index = parent.children.findIndex((child) => child.id === targetNodeId);
         if (index === -1) {
-            console.error("splitVertical: Target node not found in parent's children", targetNodeId);
+            
             return;
         }
         const insertIndex = position === "before" ? index : index + 1;
@@ -520,7 +520,7 @@ export function splitVertical(layoutState: LayoutTreeState, action: LayoutTreeSp
         if (parent) {
             const index = parent.children.findIndex((child) => child.id === targetNodeId);
             if (index === -1) {
-                console.error("splitVertical (wrap): Target node not found in parent's children", targetNodeId);
+                : Target node not found in parent's children", targetNodeId);
                 return;
             }
             parent.children[index] = groupNode;

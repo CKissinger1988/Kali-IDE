@@ -56,7 +56,7 @@ export class FitAddon implements ITerminalAddon, IFitApi {
             return;
         }
 
-        // TODO: Remove reliance on private API
+        
         const core = (this._terminal as any)._core;
 
         // Force a full render
@@ -75,7 +75,7 @@ export class FitAddon implements ITerminalAddon, IFitApi {
             return undefined;
         }
 
-        // TODO: Remove reliance on private API
+        
         const core = (this._terminal as any)._core;
         const dims: IRenderDimensions = core._renderService.dimensions;
 

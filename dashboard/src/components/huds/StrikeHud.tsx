@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface StrikeHudProps {
   active: boolean;
   progress: number;

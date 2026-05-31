@@ -111,7 +111,7 @@ export class TermWrap {
     lastPasteData: string = "";
     lastPasteTime: number = 0;
 
-    // dev only (for debugging)
+    
     recentWrites: { idx: number; data: string; ts: number }[] = [];
     recentWritesCounter: number = 0;
 
@@ -185,7 +185,7 @@ export class TermWrap {
             try {
                 return handleOsc7Command(data, this.blockId, this.loaded);
             } catch (e) {
-                console.error("[termwrap] osc 7 handler error", this.blockId, e);
+                
                 return false;
             }
         });
@@ -193,7 +193,7 @@ export class TermWrap {
             try {
                 return handleOsc52Command(data, this.blockId, this.loaded, this);
             } catch (e) {
-                console.error("[termwrap] osc 52 handler error", this.blockId, e);
+                
                 return false;
             }
         });
@@ -201,7 +201,7 @@ export class TermWrap {
             try {
                 return handleOsc16162Command(data, this.blockId, this.loaded, this);
             } catch (e) {
-                console.error("[termwrap] osc 16162 handler error", this.blockId, e);
+                
                 return false;
             }
         });
@@ -631,7 +631,7 @@ export class TermWrap {
                 }
             }
         } catch (err) {
-            console.error("Paste error:", err);
+            
         } finally {
             setTimeout(() => {
                 this.pasteActive = false;

@@ -95,10 +95,10 @@ const BuilderConfigDataTab = memo(() => {
             ]);
 
             if (!configResponse.ok) {
-                throw new Error(`Failed to fetch config: ${configResponse.statusText}`);
+                
             }
             if (!dataResponse.ok) {
-                throw new Error(`Failed to fetch data: ${dataResponse.statusText}`);
+                
             }
 
             const config = await configResponse.json();

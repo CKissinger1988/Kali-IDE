@@ -315,13 +315,13 @@ declare global {
         blockdef: BlockDef;
     };
 
-    // wshrpc.CommandDebugTermData
+    
     type CommandDebugTermData = {
         blockid: string;
         size: number;
     };
 
-    // wshrpc.CommandDebugTermRtnData
+    
     type CommandDebugTermRtnData = {
         offset: number;
         data64: string;

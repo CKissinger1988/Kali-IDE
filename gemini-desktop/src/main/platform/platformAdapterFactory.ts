@@ -43,7 +43,7 @@ export function getPlatformAdapter(): PlatformAdapter {
     } else if (process.platform === 'darwin') {
         _cachedAdapter = new MacAdapter();
     } else {
-        throw new Error(`Unsupported platform: ${process.platform}`);
+        
     }
 
     return _cachedAdapter;

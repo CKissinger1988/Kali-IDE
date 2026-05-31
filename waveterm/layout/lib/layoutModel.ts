@@ -195,7 +195,7 @@ export class LayoutModel {
      */
     focusedNode: Atom<LayoutNode>;
 
-    // TODO: Nodes that need to be placed at higher z-indices should probably be handled by an ordered list, rather than individual properties.
+    
     /**
      * The currently magnified node.
      */
@@ -393,7 +393,7 @@ export class LayoutModel {
 
         for (const action of actions) {
             if (!action.actionid) {
-                console.warn("Dropping layout action without actionid:", action);
+                
                 continue;
             }
             if (this.processedActionIds.has(action.actionid)) {
@@ -464,7 +464,7 @@ export class LayoutModel {
             }
             case LayoutTreeActionType.InsertNodeAtIndex: {
                 if (!action.indexarr) {
-                    console.error("Cannot apply eventbus layout action InsertNodeAtIndex, indexarr field is missing.");
+                    
                     break;
                 }
                 const insertAction: LayoutTreeInsertNodeAtIndexAction = {
@@ -568,7 +568,7 @@ export class LayoutModel {
                 break;
             }
             default:
-                console.warn("unsupported layout action", action);
+                
                 break;
         }
     }
@@ -649,7 +649,7 @@ export class LayoutModel {
                 if (pendingAction) {
                     this.setter(this.pendingTreeAction.throttledValueAtom, pendingAction);
                 } else {
-                    console.warn("No new pending action provided");
+                    
                 }
                 break;
             }
@@ -659,7 +659,7 @@ export class LayoutModel {
             case LayoutTreeActionType.CommitPendingAction: {
                 const pendingAction = this.getter(this.pendingTreeAction.currentValueAtom);
                 if (!pendingAction) {
-                    console.error("unable to commit pending action, does not exist");
+                    
                     break;
                 }
                 this.treeReducer(pendingAction);
@@ -687,7 +687,7 @@ export class LayoutModel {
                 splitVertical(this.treeState, action as LayoutTreeSplitVerticalAction);
                 break;
             default:
-                console.error("Invalid reducer action", this.treeState, action);
+                
         }
         if (this.magnifiedNodeId !== this.treeState.magnifiedNodeId) {
             this.lastMagnifiedNodeId = this.magnifiedNodeId;
@@ -1235,7 +1235,7 @@ export class LayoutModel {
             if (ephemeralNode?.id === nodeId) {
                 layoutNode = ephemeralNode;
             } else {
-                console.error("unable to focus node, cannot find it in tree", nodeId);
+                
                 return;
             }
         }
@@ -1285,7 +1285,7 @@ export class LayoutModel {
     async closeNode(nodeId: string) {
         const nodeToDelete = findNode(this.treeState.rootNode, nodeId);
         if (!nodeToDelete) {
-            // TODO: clean up the ephemeral node handling
+            
             // The ephemeral node is not in the tree, so we need to handle it separately.
             const ephemeralNode = this.getter(this.ephemeralNode);
             if (ephemeralNode?.id === nodeId) {
@@ -1297,7 +1297,7 @@ export class LayoutModel {
                 await this.onNodeDelete?.(ephemeralNode.data);
                 return;
             }
-            console.error("unable to close node, cannot find it in tree", nodeId);
+            
             return;
         }
         if (nodeId === this.magnifiedNodeId) {

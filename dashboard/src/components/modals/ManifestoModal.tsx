@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface ManifestoModalProps {
   isOpen: boolean;
   onClose: () => void;

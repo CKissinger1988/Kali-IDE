@@ -93,7 +93,7 @@ class WorkspaceLayoutModel {
                     meta: { "waveai:panelwidth": width },
                 });
             } catch (e) {
-                console.warn("Failed to persist AI panel width:", e);
+                
             }
         }, 300);
 
@@ -107,7 +107,7 @@ class WorkspaceLayoutModel {
                     meta: { "layout:vtabbarwidth": width },
                 });
             } catch (e) {
-                console.warn("Failed to persist vtabbar width:", e);
+                
             }
         }, 300);
     }
@@ -160,7 +160,7 @@ class WorkspaceLayoutModel {
             const showLeftTabBar = tabBarPosition === "left" && !isBuilderWindow();
             this.vtabVisible = showLeftTabBar;
         } catch (e) {
-            console.warn("Failed to initialize from tab meta:", e);
+            
         }
     }
 

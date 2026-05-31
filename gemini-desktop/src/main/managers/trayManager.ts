@@ -62,20 +62,20 @@ export default class TrayManager {
                 logger.warn(`Tray icon not found: ${iconPath}, falling back to app icon`);
                 iconPath = getIconPath();
                 if (!fs.existsSync(iconPath)) {
-                    throw new Error(`Icon not found: ${iconPath}`);
+                    
                 }
             }
 
             // Create nativeImage for tray (required for proper icon handling)
             let trayIcon = nativeImage.createFromPath(iconPath);
             if (trayIcon.isEmpty()) {
-                throw new Error(`Failed to load tray icon: ${iconPath}`);
+                
             }
 
             if (getPlatformAdapter().id === 'mac') {
                 trayIcon = this.normalizeMacTrayImage(trayIcon);
                 if (trayIcon.isEmpty()) {
-                    throw new Error(`Failed to normalize tray icon: ${iconPath}`);
+                    
                 }
             }
 

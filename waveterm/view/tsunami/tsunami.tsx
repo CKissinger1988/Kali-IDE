@@ -165,7 +165,7 @@ class TsunamiViewModel extends WebViewModel {
 
             getApi().openBuilder(draftAppId);
         } catch (err) {
-            console.error("Failed to create draft from local app:", err);
+            
         }
     }
 

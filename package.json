@@ -9,29 +9,17 @@
     "orch": "tsx agent_cli.ts",
     "test": "playwright test",
     "test:universal": "npx playwright test tests/universal_e2e",
-    "unbox": "node scripts/unbox.js",
+    "unbox": "node scripts/unbox_protocol.cjs",
     "purity": "node scripts/universal_debug_purity.js",
     "shell": "electron sovereign_shell.js",
     "build:bundle": "esbuild src/server.ts --bundle --minify --platform=node --target=node18 --format=cjs --outfile=dist/server.js --external:sqlite3 --external:canvas --external:node:sqlite",
-    "build:exe": "npm run build:bundle && node scripts/fix-pkg.cjs && pkg dist/server.js --config pkg.json",
-    "build": "npm run build:exe"
-  },
-  "pkg": {
-    "scripts": "dist/**/*.js",
-    "assets": [
-      ".env",
-      "black_antigravity_dashboard.html",
-      "docs/registry/spartan_skill_registry.json",
-      "Claude-Red/**/*"
-    ],
-    "targets": [
-      "node18-win-x64",
-      "node18-linux-x64"
-    ],
-    "outputPath": "bin"
+    "build": "npm run build:bundle"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.500.0",
+    "@simplewebauthn/browser": "^13.1.0",
+    "@simplewebauthn/server": "^13.1.1",
+    "axios": "^1.16.1",
     "better-sqlite3": "^12.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -42,6 +30,7 @@
     "helmet": "^8.2.0",
     "jsdom": "^29.1.1",
     "jsonwebtoken": "^9.0.3",
+    "msgpack-lite": "^0.1.26",
     "proxmox-api": "^1.1.1",
     "socket.io": "^4.8.3"
   },
@@ -57,7 +46,6 @@
     "@types/node": "^25.9.1",
     "electron": "^42.3.0",
     "esbuild": "^0.28.0",
-    "pkg": "^5.8.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"

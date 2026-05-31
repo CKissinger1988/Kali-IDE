@@ -103,7 +103,7 @@ export default class AuthWindow extends BaseWindow {
                 const urlObj = new URL(navigationUrl);
                 const hostname = urlObj.hostname;
 
-                // Log navigation for debugging OAuth flows
+                
                 this.logger.log('Auth window navigated to:', hostname);
 
                 if (isInternalDomain(hostname)) {

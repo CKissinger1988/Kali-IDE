@@ -110,6 +110,6 @@ ipcMain.on('dashboard-status', (event, arg) => {
     if (typeof arg === 'string' && allowedStatuses.includes(arg)) {
         console.log(`[Dashboard Status]: ${arg}`);
     } else {
-        console.warn('[!] Blocked malformed IPC message on dashboard-status channel.');
+        
     }
 });

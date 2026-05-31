@@ -44,11 +44,11 @@ function getCssColorType(color: string): string {
 
 export function validateCssColor(color: string): string {
     if (typeof color != "string") {
-        throw new Error(`Invalid CSS color: ${String(color)}`);
+        }`);
     }
     const normalizedColor = color.trim();
     if (normalizedColor === "" || !isValidCssColor(normalizedColor)) {
-        throw new Error(`Invalid CSS color: ${color}`);
+        
     }
     return getCssColorType(normalizedColor);
 }

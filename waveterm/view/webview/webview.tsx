@@ -277,7 +277,7 @@ export class WebViewModel implements ViewModel {
             globalStore.set(this.mediaMuted, newMutedVal);
             this.webviewRef.current?.setAudioMuted(newMutedVal);
         } catch (e) {
-            console.error("Failed to change mute value", e);
+            
         }
     }
 
@@ -340,7 +340,7 @@ export class WebViewModel implements ViewModel {
                 }
             }
         } catch (e) {
-            console.warn("handleRefresh catch", e);
+            
         }
     }
 
@@ -546,7 +546,7 @@ export class WebViewModel implements ViewModel {
         try {
             this.webviewRef.current?.clearHistory();
         } catch (e) {
-            console.error("Failed to clear history", e);
+            
         }
     }
 
@@ -557,7 +557,7 @@ export class WebViewModel implements ViewModel {
                 await this.env.electron.clearWebviewStorage(webContentsId);
             }
         } catch (e) {
-            console.error("Failed to clear cookies and storage", e);
+            
         }
     }
 
@@ -882,7 +882,7 @@ const WebView = memo(({ model, onFailLoad, blockRef, initialSrc }: WebViewProps)
                 model.webviewRef.current?.stopFindInPage("clearSelection");
             }
         } catch (e) {
-            console.error("Failed to search", e);
+            
         }
     }, []);
     searchProps.onNext = useCallback(() => {
@@ -893,7 +893,7 @@ const WebView = memo(({ model, onFailLoad, blockRef, initialSrc }: WebViewProps)
             console.log("search next", searchVal);
             model.webviewRef.current?.findInPage(searchVal, { findNext: false, forward: true });
         } catch (e) {
-            console.error("Failed to search next", e);
+            
         }
     }, [searchVal]);
     searchProps.onPrev = useCallback(() => {
@@ -904,7 +904,7 @@ const WebView = memo(({ model, onFailLoad, blockRef, initialSrc }: WebViewProps)
             console.log("search prev", searchVal);
             model.webviewRef.current?.findInPage(searchVal, { findNext: false, forward: false });
         } catch (e) {
-            console.error("Failed to search prev", e);
+            
         }
     }, [searchVal]);
     const onFoundInPage = useCallback((event: any) => {
@@ -979,7 +979,7 @@ const WebView = memo(({ model, onFailLoad, blockRef, initialSrc }: WebViewProps)
                 }
             }
         } catch (e) {
-            console.error("Failed to get webcontentsid / setzoomlevel (webview)", e);
+            ", e);
         }
     }, [model.webviewRef.current, domReady, zoomFactor]);
 
@@ -1043,10 +1043,10 @@ const WebView = memo(({ model, onFailLoad, blockRef, initialSrc }: WebViewProps)
         };
         const failLoadHandler = (e: any) => {
             if (e.errorCode === -3) {
-                console.warn("Suppressed ERR_ABORTED error", e);
+                
             } else {
                 const errorMessage = `Failed to load ${e.validatedURL}: ${e.errorDescription}`;
-                console.error(errorMessage);
+                
                 setErrorText(errorMessage);
                 if (onFailLoad) {
                     const curUrl = model.webviewRef.current.getURL();

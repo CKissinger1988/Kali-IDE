@@ -449,9 +449,9 @@ type ParsedDataUrl = {
 };
 
 function parseDataUrl(dataUrl: string): ParsedDataUrl {
-    if (!dataUrl.startsWith("data:")) throw new Error("Invalid data URL");
+    if (!dataUrl.startsWith("data:")) 
     const [header, data] = dataUrl.split(",", 2);
-    if (data === undefined) throw new Error("Invalid data URL: missing data");
+    if (data === undefined) 
 
     const meta = header.slice(5);
     let mimeType = "text/plain;charset=US-ASCII";

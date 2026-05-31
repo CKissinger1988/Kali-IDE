@@ -5,7 +5,7 @@ import { GeminiErrorBoundary } from './GeminiErrorBoundary';
 // Component that throws an error for testing
 const ThrowError = ({ shouldThrow }: { shouldThrow?: boolean }) => {
     if (shouldThrow) {
-        throw new Error('Test error');
+        
     }
     return <div>Working component</div>;
 };

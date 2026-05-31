@@ -996,7 +996,7 @@ export class TermViewModel implements ViewModel {
                                     console.log("Save scrollback cancelled by user");
                                 }
                             } catch (error) {
-                                console.error("Failed to save scrollback:", error);
+                                
                                 const errorMessage = error?.message || "An unknown error occurred";
                                 modalsModel.pushModal("MessageModal", {
                                     children: `Failed to save session scrollback: ${errorMessage}`,

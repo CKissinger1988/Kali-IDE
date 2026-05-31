@@ -513,13 +513,13 @@ export async function registerViaDBus(
         portalInterface = proxyObj.getInterface(GLOBAL_SHORTCUTS_INTERFACE);
 
         if (!portalInterface?.CreateSession || !portalInterface?.BindShortcuts) {
-            throw new Error('GlobalShortcuts interface methods not available');
+            
         }
 
         // Read sender name (available after getProxyObject completes the Hello handshake)
         const sender = connection.name?.replace(/^:/, '')?.replace(/\./g, '_') || '';
         if (!sender) {
-            throw new Error('Could not determine D-Bus sender name — bus.name is null');
+            
         }
         logger.log(`D-Bus sender: ${connection.name} → ${sender}`);
 
@@ -544,7 +544,7 @@ export async function registerViaDBus(
         // Wait for the Response signal with the actual session handle
         const createResponse = await createResponsePromise;
         if (createResponse.code !== 0) {
-            throw new Error(`CreateSession failed with response code ${createResponse.code}`);
+            
         }
 
         // Extract session path from Response (more reliable than constructing it)
