@@ -8,15 +8,29 @@ if [ -f .env ]; then
 fi
 
 # Load secret from argument file if provided
-if [ -n "$1" ] && [ -f "$1" ]; then
-    echo "[*] Reading ADMIN_PASS from $1"
-    export ADMIN_PASS=$(cat "$1")
-    rm "$1"
+if [ -n "$1" ]; then
+    if [ -f "$1" ]; then
+        echo "[*] Reading ADMIN_PASS from $1"
+        ADMIN_PASS=$(cat "$1")
+        if [ $? -ne 0 ]; then
+            echo -e "[!] Error: Failed to read secret file $1"
+            exit 1
+        fi
+        if [ -z "$ADMIN_PASS" ]; then
+            echo -e "[!] Error: Secret file $1 is empty"
+            exit 1
+        fi
+        export ADMIN_PASS
+        rm "$1"
+    else
+        echo -e "[!] Error: Secret file $1 not found at path $(pwd)"
+        exit 1
+    fi
 fi
 
 # Final check
 if [ -z "$ADMIN_PASS" ]; then
-    echo -e "[!] Error: ADMIN_PASS environment variable not set for build."
+    echo -e "[!] Error: ADMIN_PASS environment variable not set for build. Current user: $(whoami)"
     exit 1
 fi
 
