@@ -181,7 +181,32 @@
             default: deny
             direction: incoming
 
-        - name: Start and enable Fail2ban
+        - name: Enable UFW logging
+          ufw:
+            logging: 'on'
+
+        - name: Create Fail2ban UFW Portscan filter
+          copy:
+            dest: /etc/fail2ban/filter.d/ufw-portscan.conf
+            content: |
+              [Definition]
+              failregex = \[UFW BLOCK\] IN=.* SRC=<HOST> DST=.*
+              ignoreregex =
+
+        - name: Create Fail2ban UFW Portscan jail (Permanent Ban)
+          copy:
+            dest: /etc/fail2ban/jail.d/ufw-portscan.local
+            content: |
+              [ufw-portscan]
+              enabled = true
+              filter = ufw-portscan
+              logpath = /var/log/kern.log
+              maxretry = 10
+              findtime = 600
+              bantime = -1
+              banaction = ufw
+
+        - name: Restart and enable Fail2ban
           systemd:
             name: fail2ban
             enabled: yes
