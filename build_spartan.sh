@@ -3,9 +3,19 @@ set -xe
 
 # Load configuration if .env exists
 if [ -f .env ]; then
+    echo "[*] Loading .env file..."
+    cat .env
     source .env
-    # Explicitly export variables to ensure they are available to sub-processes
-    export ADMIN_PASS ISO_PATH OUTPUT_ISO
+    
+    # Debug: Check if variables were set
+    echo "[*] ADMIN_PASS set? [${ADMIN_PASS:+yes}]"
+    
+    # Explicitly export variables
+    export ADMIN_PASS="${ADMIN_PASS}"
+    export ISO_PATH="${ISO_PATH}"
+    export OUTPUT_ISO="${OUTPUT_ISO}"
+else
+    echo "[!] .env file not found."
 fi
 
 # Fallback if ADMIN_PASS is still not set
