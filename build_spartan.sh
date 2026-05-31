@@ -6,18 +6,14 @@ if [ -f .env ]; then
     source .env
 fi
 
-# Use temporary file for ADMIN_PASS if provided as argument
-if [ -n "$1" ]; then
-    if [ -f "$1" ]; then
-        echo "[*] Reading ADMIN_PASS from $1"
-        export ADMIN_PASS=$(cat "$1")
-        rm "$1"
-    else
-        echo "[!] Warning: File $1 provided as argument not found."
-    fi
+# Fallback: Use temporary file if provided as argument AND ADMIN_PASS is not already set
+if [ -z "$ADMIN_PASS" ] && [ -n "$1" ] && [ -f "$1" ]; then
+    echo "[*] Reading ADMIN_PASS from $1"
+    export ADMIN_PASS=$(cat "$1")
+    rm "$1"
 fi
 
-# Fallback if ADMIN_PASS is still not set
+# Final check
 if [ -z "$ADMIN_PASS" ]; then
     echo -e "[!] Error: ADMIN_PASS environment variable not set for build. Current user: $(whoami)"
     exit 1

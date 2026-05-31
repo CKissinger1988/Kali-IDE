@@ -28,17 +28,14 @@ jobs:
         env:
           ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
         run: |
-          # Generate a secure temp file for ADMIN_PASS
-          echo "$ADMIN_PASS" > admin_pass.tmp
-          chmod 600 admin_pass.tmp
-          
           # Generate config file for paths
           echo "ISO_PATH=kali-linux-2026.1-live-amd64.iso" > .env
           echo "OUTPUT_ISO=kali-linux-2026.1-spartanai.iso" >> .env
-          
+
           chmod +x build_spartan.sh
-          # Use sudo -E to preserve the environment
-          sudo -E ./build_spartan.sh admin_pass.tmp
+          # Pass ADMIN_PASS directly to the sudo command
+          sudo ADMIN_PASS="$ADMIN_PASS" ./build_spartan.sh
+
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
