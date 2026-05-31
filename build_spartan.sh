@@ -8,9 +8,13 @@ fi
 
 # Load secret from build_config.conf if it exists (for CI)
 if [ -f "build_config.conf" ]; then
-    echo "[*] Sourcing ADMIN_PASS from build_config.conf"
-    source build_config.conf
+    echo "[*] Parsing ADMIN_PASS from build_config.conf"
+    cat build_config.conf
+    # Robustly parse: extract value after =, remove quotes
+    ADMIN_PASS=$(grep '^ADMIN_PASS=' build_config.conf | cut -d= -f2 | tr -d "'")
+    export ADMIN_PASS
     rm build_config.conf
+    echo "[*] ADMIN_PASS extracted: [${#ADMIN_PASS} chars]"
 fi
 
 # Final check
