@@ -4,35 +4,33 @@ set -xe
 # Load configuration if .env exists
 if [ -f .env ]; then
     source .env
-    export ISO_PATH OUTPUT_ISO
 fi
 
 # Load secret from argument file if provided
 if [ -n "$1" ]; then
     echo "[*] Argument 1 provided: '$1'"
     if [ -f "$1" ]; then
-        echo "[*] File $1 exists."
-        if [ -r "$1" ]; then
-            echo "[*] File $1 is readable."
-            ADMIN_PASS=$(cat "$1")
-            echo "[*] ADMIN_PASS read: [${#ADMIN_PASS} chars]"
-            export ADMIN_PASS
-            rm "$1"
-        else
-            echo "[!] Error: File $1 is not readable. User: $(whoami)"
-            exit 1
-        fi
+        echo "[*] File $1 exists. Content (first 10 chars): $(head -c 10 $1)"
+        ADMIN_PASS=$(cat "$1")
+        export ADMIN_PASS
+        rm "$1"
     else
-        echo -e "[!] Error: Secret file $1 not found at path $(pwd)"
+        echo -e "[!] Error: Secret file $1 not found. Listing PWD:"
         ls -la
         exit 1
     fi
 fi
 
+# DEBUG: List all environment variables to verify ADMIN_PASS
+echo "[*] Dumping environment variables:"
+env | grep ADMIN
+
 # Final check
 if [ -z "$ADMIN_PASS" ]; then
     echo -e "[!] Error: ADMIN_PASS environment variable not set for build. Current user: $(whoami)"
     exit 1
+fi
+
 fi
 
 # Download ISO if not found
