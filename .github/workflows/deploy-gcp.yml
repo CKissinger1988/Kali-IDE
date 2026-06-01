@@ -18,6 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -25,16 +26,13 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Debug Service Account
-        run: gcloud auth list
-
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
       - name: Build and Push Container
         run: |
-          IMAGE_TAG="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/spartan-images/ai-supreme-sovereign-core:${{ github.sha }}"
-          IMAGE_LATEST="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/spartan-images/ai-supreme-sovereign-core:latest"
+          IMAGE_TAG="us-central1-docker.pkg.dev/${{ steps.auth.outputs.project_id }}/spartan-images/ai-supreme-sovereign-core:${{ github.sha }}"
+          IMAGE_LATEST="us-central1-docker.pkg.dev/${{ steps.auth.outputs.project_id }}/spartan-images/ai-supreme-sovereign-core:latest"
           docker build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" .
           docker push "$IMAGE_TAG"
           docker push "$IMAGE_LATEST"
@@ -43,6 +41,6 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ai-supreme-sovereign-core
-          image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/spartan-images/ai-supreme-sovereign-core:latest
+          image: us-central1-docker.pkg.dev/${{ steps.auth.outputs.project_id }}/spartan-images/ai-supreme-sovereign-core:latest
           region: us-central1
           flags: --allow-unauthenticated
