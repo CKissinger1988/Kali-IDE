@@ -231,7 +231,7 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
         [regex, wholeWord, caseSensitive]
     );
     const handleSearchError = React.useCallback((e: Error) => {
-        console.warn("search error:", e);
+        
     }, []);
     const executeSearch = React.useCallback(
         (searchText: string, direction: "next" | "previous") => {

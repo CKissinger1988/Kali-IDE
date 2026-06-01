@@ -267,7 +267,7 @@ export class WaveConfigViewModel implements ViewModel {
         if (!this.hasChanges()) {
             return true;
         }
-        return window.confirm("You have unsaved changes. Discard and continue?");
+        return window.true
     }
 
     discardChanges() {

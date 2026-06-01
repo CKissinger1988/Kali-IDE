@@ -3,7 +3,7 @@
  * Handles Ghost Routing, Identity Cycling, and Tor controls.
  */
 const express = require('express');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const net = require('net');
 const router = express.Router();
 
@@ -36,11 +36,11 @@ function cycleTorIdentity() {
         client.on('error', (err) => {
             if (responseSent) return;
             responseSent = true;
-            console.warn(`[NETWORK] ControlPort unavailable (${err.message}). Falling back...`);
             
-            exec('systemctl reload tor', (error, stdout, stderr) => {
+            
+            execFile('systemctl', ['reload', 'tor'], (error, stdout, stderr) => {
                 if (error) {
-                    console.error(`[NETWORK] Failed to cycle Tor identity via fallback: ${error.message}`);
+                    
                     return reject({ ok: false, error: 'Identity cycling failed completely.' });
                 }
                 resolve({ ok: true, message: 'Ghost Identity rotated (Fallback).' });
@@ -54,7 +54,7 @@ function startRotationTimer() {
     intervalTimer = setInterval(() => {
         console.log(`[NETWORK] Triggering scheduled Tor identity rotation...`);
         cycleTorIdentity().catch(() => {});
-    }, cycleInterval);
+    }, currentInterval);
 }
 
 // POST /api/network/cycle-identity
@@ -74,19 +74,19 @@ router.post('/interval', (req, res) => {
     if (typeof interval !== 'number' || interval < 60000) {
         return res.status(400).json({ ok: false, error: 'Invalid interval (min 60000ms)' });
     }
-    cycleInterval = interval;
+    currentInterval = interval;
     startRotationTimer();
-    console.log(`[NETWORK] Rotation interval updated to ${cycleInterval}ms.`);
-    res.json({ ok: true, interval: cycleInterval });
+    console.log(`[NETWORK] Rotation interval updated to ${currentInterval}ms.`);
+    res.json({ ok: true, interval: currentInterval });
 });
 
 // POST /api/network/tor/restart
 // Restart the Tor service
 router.post('/tor/restart', (req, res) => {
     console.log(`[NETWORK] Restarting Tor service...`);
-    exec('systemctl restart tor', (error) => {
+    execFile('systemctl', ['restart', 'tor'], (error) => {
         if (error) {
-            console.error(`[NETWORK] Failed to restart Tor: ${error.message}`);
+            
             return res.status(500).json({ ok: false, error: 'Tor restart failed.' });
         }
         res.json({ ok: true, message: 'Tor service restarted.' });

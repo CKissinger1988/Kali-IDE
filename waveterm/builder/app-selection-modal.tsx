@@ -113,7 +113,7 @@ export function AppSelectionModal() {
             const sortedApps = (appList || []).sort((a, b) => b.modtime - a.modtime);
             setApps(sortedApps);
         } catch (err) {
-            console.error("Failed to load apps:", err);
+            
             setError("Failed to load apps");
         } finally {
             setLoading(false);
@@ -129,7 +129,7 @@ export function AppSelectionModal() {
                 const result = await RpcApi.MakeDraftFromLocalCommand(TabRpcClient, { localappid: appId });
                 appIdToUse = result.draftappid;
             } catch (err) {
-                console.error("Failed to create draft from local app:", err);
+                
                 setError(`Failed to create draft from ${appId}: ${err.message || String(err)}`);
                 return;
             }

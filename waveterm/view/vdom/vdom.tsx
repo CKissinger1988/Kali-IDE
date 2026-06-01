@@ -361,7 +361,7 @@ function StyleTag({ elem, model }: { elem: VDomElem; model: VDomModel }) {
         return null;
     }
     const wrapperClassName = "vdom-" + model.blockId;
-    // TODO handle errors
+    
     const sanitizedCss = validateAndWrapCss(model, styleText, wrapperClassName);
     if (sanitizedCss == null) {
         return null;
@@ -376,7 +376,7 @@ function WaveStyle({ src, model, onMount }: { src: string; model: VDomModel; onM
             try {
                 const response = await fetch(src);
                 if (!response.ok) {
-                    console.error(`Failed to load CSS from ${src}`);
+                    
                     return;
                 }
                 const cssText = await response.text();
@@ -386,10 +386,10 @@ function WaveStyle({ src, model, onMount }: { src: string; model: VDomModel; onM
                     setStyleContent(sanitizedCss);
                 } else {
                     onMount?.();
-                    console.error("Failed to sanitize CSS");
+                    
                 }
             } catch (error) {
-                console.error("Error fetching CSS:", error);
+                
                 onMount?.();
             }
         }

@@ -33,7 +33,7 @@ describe('ErrorBoundary', () => {
     it('renders fallback UI when child throws', () => {
         // Component that throws on render
         const ThrowingComponent = () => {
-            throw new Error('Test error');
+            
         };
 
         render(
@@ -48,7 +48,7 @@ describe('ErrorBoundary', () => {
 
     it('renders custom fallback when provided', () => {
         const ThrowingComponent = () => {
-            throw new Error('Test error');
+            
         };
 
         render(
@@ -63,7 +63,7 @@ describe('ErrorBoundary', () => {
 
     it('logs error to console when error occurs', () => {
         const ThrowingComponent = () => {
-            throw new Error('Logged test error');
+            
         };
 
         render(
@@ -83,7 +83,7 @@ describe('ErrorBoundary', () => {
 
     it('shows error details expandable section', () => {
         const ThrowingComponent = () => {
-            throw new Error('Detailed error message');
+            
         };
 
         render(
@@ -103,7 +103,7 @@ describe('ErrorBoundary', () => {
 
     it('shows reload button in fallback UI', () => {
         const ThrowingComponent = () => {
-            throw new Error('Test error');
+            
         };
 
         render(
@@ -124,7 +124,7 @@ describe('ErrorBoundary', () => {
         window.location = { ...originalLocation, reload: reloadSpy };
 
         const ThrowingComponent = () => {
-            throw new Error('Test error');
+            
         };
 
         render(

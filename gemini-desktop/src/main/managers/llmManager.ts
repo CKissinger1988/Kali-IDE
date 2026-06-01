@@ -285,7 +285,7 @@ export default class LlmManager {
     private validateModelId(modelId: string): ModelConfig {
         const config = MODEL_REGISTRY[modelId];
         if (!config) {
-            throw new Error(`Unknown model: ${modelId}`);
+            throw new TypeError("Unknown model ID: " + modelId);
         }
         return config;
     }
@@ -337,11 +337,11 @@ export default class LlmManager {
         if (!this.ensureNativeAvailable('downloadModel')) {
             const message = this.nativeProbeError ?? 'node-llama-cpp is not available';
             this.setStatus('error', message);
-            throw new Error(message);
+            throw new TypeError(message);
         }
         // Guard against concurrent downloads
         if (this.status === 'downloading') {
-            throw new Error('Download already in progress');
+            throw new TypeError('Model download already in progress');
         }
 
         const config = this.validateModelId(modelId);
@@ -394,7 +394,7 @@ export default class LlmManager {
 
             // Verify file exists
             if (!this.modelPath || !existsSync(this.modelPath)) {
-                throw new Error('Downloaded file not found after download');
+                throw new TypeError('Downloaded model file not found');
             }
 
             this.downloadProgress = 100;
@@ -429,16 +429,16 @@ export default class LlmManager {
         if (!this.ensureNativeAvailable('loadModel')) {
             const message = this.nativeProbeError ?? 'node-llama-cpp is not available';
             this.setStatus('error', message);
-            throw new Error(message);
+            throw new TypeError(message);
         }
         // Guard against concurrent load operations
         if (this.status === 'initializing') {
-            throw new Error('Model is currently loading');
+            throw new TypeError('Model initialization already in progress');
         }
 
         // Check if model is downloaded
         if (!this.isModelDownloaded()) {
-            throw new Error('Model not downloaded. Call downloadModel() first.');
+            throw new TypeError('Model must be downloaded before loading');
         }
 
         // Already loaded
@@ -512,7 +512,7 @@ export default class LlmManager {
                 this.nativeProbeError = v8Message;
                 this.setStatus('error', v8Message);
                 logger.error('Failed to load model due to V8 sandbox conflict', { error });
-                throw new Error(v8Message);
+                throw new TypeError(v8Message);
             }
 
             logger.error('Failed to load model', { error });

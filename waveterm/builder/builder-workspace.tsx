@@ -45,7 +45,7 @@ const BuilderWorkspace = memo(() => {
                     setLayout(DefaultLayoutPercentages);
                 }
             } catch (error) {
-                console.error("Failed to load builder layout:", error);
+                
                 setLayout(DefaultLayoutPercentages);
             } finally {
                 setIsLoading(false);
@@ -65,7 +65,7 @@ const BuilderWorkspace = memo(() => {
                     "builder:layout": newLayout,
                 },
             }).catch((error) => {
-                console.error("Failed to save builder layout:", error);
+                
             });
         }),
         [builderId]

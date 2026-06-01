@@ -122,7 +122,7 @@ function handleShellIntegrationCommandStart(
                 globalStore.set(termWrap.claudeCodeActiveAtom, isCC);
                 checkCommandForTelemetry(decodedCmd);
             } catch (e) {
-                console.error("Error decoding cmd64:", e);
+                
                 rtInfo["shell:lastcmd"] = null;
                 globalStore.set(termWrap.lastCommandAtom, null);
                 globalStore.set(termWrap.claudeCodeActiveAtom, false);
@@ -206,11 +206,11 @@ export function handleOsc52Command(data: string, blockId: string, loaded: boolea
                 await navigator.clipboard.writeText(decodedText);
                 dlog("OSC 52: copied", decodedText.length, "characters to clipboard");
             } catch (err) {
-                console.error("OSC 52: clipboard write failed:", err);
+                
             }
         });
     } catch (e) {
-        console.error("OSC 52: base64 decode error:", e);
+        
     }
 
     return true;
@@ -298,7 +298,7 @@ export function handleOsc16162Command(data: string, blockId: string, loaded: boo
         try {
             parsedData = JSON.parse(jsonDataStr);
         } catch (e) {
-            console.error("Error parsing OSC 16162 JSON data:", e);
+            
         }
     }
 

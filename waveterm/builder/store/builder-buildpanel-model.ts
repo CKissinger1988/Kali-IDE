@@ -55,7 +55,7 @@ export class BuilderBuildPanelModel {
             const output = await RpcApi.GetBuilderOutputCommand(TabRpcClient, builderId);
             globalStore.set(this.outputLines, output || []);
         } catch (err) {
-            console.error("Failed to load builder output:", err);
+            
         }
     }
 

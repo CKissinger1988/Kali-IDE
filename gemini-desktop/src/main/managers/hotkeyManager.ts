@@ -653,7 +653,7 @@ export default class HotkeyManager {
             return;
         }
 
-        // Debugging: Check if already registered according to Electron
+        
         const isAlreadyRegistered = globalShortcut.isRegistered(accelerator);
         logger.log(`Registering ${id} (${accelerator}). isRegistered pre-check: ${isAlreadyRegistered}`);
         logger.log(`Calling globalShortcut.register for ${id} (${accelerator})`);

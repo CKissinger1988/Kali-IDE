@@ -28,7 +28,7 @@ export function newLayoutNode(
     };
 
     if (!validateNode(newNode)) {
-        throw new Error("Invalid node");
+        
     }
     return newNode;
 }
@@ -144,12 +144,12 @@ export function findParent(node: LayoutNode, id: string): LayoutNode | undefined
  */
 export function validateNode(node: LayoutNode): boolean {
     if (!node.children == !node.data) {
-        console.error("Either children or data must be defined for node, not both");
+        
         return false;
     }
 
     if (node.children?.length === 0) {
-        console.error("Node cannot define an empty array of children");
+        
         return false;
     }
     return true;
@@ -187,7 +187,7 @@ export function balanceNode(
     walkNodes(
         node,
         (node) => {
-            if (!validateNode(node)) throw new Error("Invalid node");
+            if (!validateNode(node)) 
             node.children = node.children?.flatMap((child) => {
                 if (child.flexDirection === node.flexDirection) {
                     child.flexDirection = reverseFlexDirection(node.flexDirection);

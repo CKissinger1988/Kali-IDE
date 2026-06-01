@@ -13,7 +13,7 @@ source lib/configure_user.sh
 ISO_PATH="/mnt/c/GitHub/kali-linux-2026.1-live-amd64.iso"
 STAGING_DIR="/opt/kali_remaster_staging"
 CHROOT_DIR="/opt/kali_chroot"
-OUTPUT_ISO="/mnt/c/GitHub/kali-linux-2026.1-ai-supreme.iso"
+OUTPUT_ISO="/mnt/d/kali-linux-2026.1-ai-supreme.iso"
 TOOLS_STAGING="/mnt/c/GitHub/ai_tools_staging"
 
 # User Credentials (injected via ENV)
@@ -34,9 +34,17 @@ fi
 
 setup_mounts "$CHROOT_DIR"
 
+# Ensure mounts are safely torn down if the script fails or exits unexpectedly
+trap 'echo -e "\033[1;33m[*] Cleaning up mounts...\033[0m"; teardown_mounts "$CHROOT_DIR" || true' EXIT ERR
+
 # Copy libraries into chroot
 mkdir -p "$CHROOT_DIR/lib"
 cp -r lib/* "$CHROOT_DIR/lib/"
+
+# Staging SpartanAI Command Center Frontend
+echo "[*] Staging SpartanAI Command Center Frontend..."
+mkdir -p "$CHROOT_DIR/opt/spartanai-command-center"
+rsync -a --exclude='node_modules' --exclude='.git' spartanai-command-center/ "$CHROOT_DIR/opt/spartanai-command-center/"
 
 # 4. Installation Phase
 echo -e "\033[1;33m[*] Entering Chroot for AI Tool Integration...\033[0m"
@@ -50,15 +58,30 @@ echo "deb http://http.kali.org/kali kali-rolling main contrib non-free non-free-
 # Load functions for chroot usage
 source /lib/install_dependencies.sh
 source /lib/configure_user.sh
+source /lib/sovereign_core.sh
 
 install_dependencies
 configure_user "$ADMIN_USER" "$ADMIN_PASS"
 install_ai_tools
 
-# ... (Include other system configurations here from original script)
-CHROOT_EOF
+# Building and Deploying SpartanAI Command Center
+echo "[*] Building and Deploying SpartanAI Command Center..."
+cd /opt/spartanai-command-center/dashboard
+npm install --silent
+npm run build --silent
+# Assuming deploy_sovereign_core or a similar mechanism handles the final setup
+# Add specific deployment commands here if needed
 
-teardown_mounts "$CHROOT_DIR"
+# 5. Purify Phase (Cleanup)
+echo "[*] Purifying the Sovereign Core environment..."
+rm -rf /opt/kali-ide/dashboard/node_modules
+rm -rf /opt/kali-ide/dashboard/src
+rm -rf /opt/kali-ide/src/**/*.ts # We use tsx but if we wanted to be ultra-clean we'd compile to JS
+# For now, let's keep it simple and just remove obvious dev junk
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+CHROOT_EOF
 
 # 8. Repack SquashFS
 echo -e "\033[1;33m[*] Repacking SquashFS...\033[0m"

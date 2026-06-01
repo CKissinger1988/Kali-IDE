@@ -468,7 +468,7 @@ export default class UpdateManager {
             // MASKED ERROR: Do NOT send the raw error message to the renderer/user.
             // Raw errors from electron-updater can be massive (HTML, full stack traces) and
             // cause UI rendering issues (toasts going off-screen).
-            // We log the real error above for debugging, but tell the user a generic message.
+            
             this.broadcastToWindows(
                 IPC_CHANNELS.AUTO_UPDATE_ERROR,
                 'The auto-update service encountered an error. Please try again later.'
@@ -623,7 +623,7 @@ export default class UpdateManager {
             // MASKED ERROR: Do NOT send the raw error message to the renderer/user.
             // Raw errors from electron-updater can be massive (HTML, full stack traces) and
             // cause UI rendering issues (toasts going off-screen).
-            // We log the real error above for debugging, but tell the user a generic message.
+            
             this.broadcastToWindows(
                 IPC_CHANNELS.AUTO_UPDATE_ERROR,
                 'The auto-update service encountered an error. Please try again later.'
@@ -701,7 +701,7 @@ export default class UpdateManager {
 
         if (!response.ok) {
             logger.warn(`GitHub API returned ${response.status}`);
-            throw new Error('GITHUB_API_RESPONSE_NOT_OK');
+            
         }
 
         const release = (await response.json()) as unknown;

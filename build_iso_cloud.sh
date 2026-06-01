@@ -11,9 +11,17 @@ CHROOT_DIR="/home/runner/chroot"
 OUTPUT_ISO="kali-linux-2026.1-ai-supreme.iso"
 TOOLS_SOURCE="/home/runner/work/Kali-IDE/Kali-IDE"
 
+# Load Environment Variables if present
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
 # User Credentials
-ADMIN_USER="Creator"
-ADMIN_PASS="@11646"
+ADMIN_USER="${ADMIN_USER:-Creator}"
+if [ -z "$ADMIN_PASS" ]; then
+    echo -e "\033[0;31m[!] Error: ADMIN_PASS environment variable not set for cloud build.\033[0m"
+    exit 1
+fi
 
 echo "[*] Downloading Kali ISO (High-Speed Multi-Connection)..."
 BASE_URLS=(
@@ -70,7 +78,7 @@ apt-get install -y curl wget git nodejs npm python3-pip python3-venv libfuse2t64
 # --- USER CONFIGURATION ---
 useradd -m -s /bin/bash -G sudo,video,render,disk,dialout,audio,plugdev,input "$ADMIN_USER" || true
 echo "$ADMIN_USER:$ADMIN_PASS" | chpasswd
-echo "$ADMIN_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/99-ai-supreme
+echo "$ADMIN_USER ALL=(ALL) NOPASSWD: /usr/bin/hostnamectl, /usr/sbin/ip, /usr/bin/macchanger, /usr/sbin/macchanger, /usr/bin/systemctl, /usr/bin/sdmem, /usr/bin/mount, /usr/bin/umount, /usr/sbin/chroot" > /etc/sudoers.d/99-ai-supreme
 chmod 0440 /etc/sudoers.d/99-ai-supreme
 
 # --- OLLAMA & GEMMA ---
@@ -93,22 +101,48 @@ apt-get update && apt-get install -y protonvpn && rm protonvpn-stable-release_1.
 # Identity Rotation
 cat <<EOF > /usr/local/bin/ai-supreme-identity-rotate
 #!/bin/bash
-while true; do
-    NEW_HOSTNAME="SYS-\\\$(head /dev/urandom | tr -dc A-Z0-9 | head -c 12)"
-    hostnamectl set-hostname "\\\$NEW_HOSTNAME"
-    for interface in \\\$(ls /sys/class/net | grep -v lo); do
-        ip link set dev "\\\$interface" down
-        macchanger -r "\\\$interface"
-        ip link set dev "\\\$interface" up
-    done
-    sleep 600
+NEW_HOSTNAME="SYS-\\\$(head /dev/urandom | tr -dc A-Z0-9 | head -c 12)"
+hostnamectl set-hostname "\\\$NEW_HOSTNAME"
+for interface in \\\$(ls /sys/class/net | grep -v lo); do
+    ip link set dev "\\\$interface" down
+    macchanger -r "\\\$interface"
+    ip link set dev "\\\$interface" up
 done
 EOF
 chmod +x /usr/local/bin/ai-supreme-identity-rotate
 
+cat <<EOF > /etc/systemd/system/ai-supreme-identity-rotate.service
+[Unit]
+Description=AI Supreme Identity Rotation
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ai-supreme-identity-rotate
+EOF
+
+cat <<EOF > /etc/systemd/system/ai-supreme-identity-rotate.timer
+[Unit]
+Description=Run AI Supreme Identity Rotation every 10 minutes
+
+[Timer]
+OnBootSec=1m
+OnUnitActiveSec=10m
+
+[Install]
+WantedBy=timers.target
+EOF
+
+systemctl enable ai-supreme-identity-rotate.timer
+
 # System AI Commands
 cat <<EOF > /usr/local/bin/jarvis
 #!/bin/bash
+
+# Route AI commands to the external remote SpartanAI_Hub_Master or fallback
+SPARTAN_AI_HOST="\\\${SPARTAN_AI_HOST:-${EXTERNAL_SPARTAN_SERVER:-127.0.0.1:11434}}"
+export OLLAMA_HOST="\\\$SPARTAN_AI_HOST"
+
 if [[ "\\\$1" == "vanish" ]]; then
     sdmem -f -v
     rm -rf /var/log/*
@@ -118,6 +152,25 @@ fi
 ollama run gemma "As JARVIS (Integrated Hardware Sovereign), execute this directive: \\\$*"
 EOF
 chmod +x /usr/local/bin/jarvis
+
+# Spartan AI Hub Live Sync Script
+cat <<EOF > /usr/local/bin/spartan-sync
+#!/bin/bash
+SERVER_URL="\\\${SPARTAN_UPDATE_SERVER:-${EXTERNAL_SPARTAN_SERVER:-https://127.0.0.1:8080}}"
+CERT_ARGS=""
+
+if [ -f "/etc/ai-supreme/certs/spartan-mtls.pem" ]; then
+    echo "[*] mTLS Zero-Trust Identity Found. Applying cryptographic signature..."
+    CERT_ARGS="--certificate=/etc/ai-supreme/certs/spartan-mtls.pem --private-key=/etc/ai-supreme/certs/spartan-mtls.key"
+fi
+
+echo "[*] Fetching latest Spartan AI Hub package from \\\$SERVER_URL..."
+wget -q --show-progress \\\$CERT_ARGS "\\\$SERVER_URL/spartan-ai-hub.deb" -O /tmp/spartan.deb || { echo "[!] Secure download failed! Verify mTLS certificates and Mesh state."; exit 1; }
+echo "[*] Installing updates..."
+sudo apt-get install -y /tmp/spartan.deb
+echo "[+] Sync Complete! Spartan AI Hub is up to date."
+EOF
+chmod +x /usr/local/bin/spartan-sync
 
 # MOTD
 echo "AI SUPREME OMNIPOTENT WORKSTATION - ASCENDED" > /etc/motd

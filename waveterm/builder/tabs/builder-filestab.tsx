@@ -252,7 +252,7 @@ const BuilderFilesTab = memo(() => {
 
             await loadFiles();
         } catch (err) {
-            console.error("Error uploading file:", err);
+            
             setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);

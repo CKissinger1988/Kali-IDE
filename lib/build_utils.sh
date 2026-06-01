@@ -2,7 +2,7 @@
 # lib/build_utils.sh - ISO build utility functions
 
 function check_root() {
-    if [ "$EUID" -ne 0 ]; then
+    if [ "$(id -u)" -ne 0 ]; then
         echo -e "\033[0;31m[!] Error: This script must be run as root (sudo).\033[0m"
         exit 1
     fi

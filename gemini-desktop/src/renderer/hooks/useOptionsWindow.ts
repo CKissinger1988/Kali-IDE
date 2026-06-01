@@ -24,7 +24,7 @@ export function useOptionsWindow(): { openOptions: () => Promise<void> } {
      */
     const openOptions = useCallback(async (): Promise<void> => {
         logger.warn('Options window not yet implemented in Electron');
-        // TODO: Implement IPC to open options window
+        
     }, []);
 
     return { openOptions };

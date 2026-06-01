@@ -1,5 +1,5 @@
 // Sovereign Shell - Electron Wrapper for AI Supreme Dashboard
-import { app, BrowserWindow, Tray, Menu, nativeImage } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, session } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -17,7 +17,9 @@ function createWindow() {
         icon: path.join(__dirname, 'icon.png'), // Add an icon if available
         webPreferences: {
             nodeIntegration: false,
-            contextIsolation: true
+            contextIsolation: true,
+            sandbox: true,
+            preload: path.join(__dirname, 'preload.js')
         }
     });
 
@@ -50,8 +52,8 @@ function createTray() {
         { label: 'Project-Zero: Armed', enabled: false },
         { type: 'separator' },
         { label: 'Panic: Nuclear Purge', click: () => {
-            // Trigger Project-Zero via IPC or WebRequest
-            mainWindow.webContents.executeJavaScript('triggerProjectZero()');
+            // Trigger Project-Zero via secure IPC channel
+            mainWindow.webContents.send('trigger-project-zero');
         }},
         { type: 'separator' },
         { label: 'Exit Sovereign Shell', click: () => {
@@ -69,6 +71,23 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
+    // Enforce Content Security Policy (CSP) via HTTP Headers
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Content-Security-Policy': [
+                    "default-src 'self'; " +
+                    "script-src 'self' 'unsafe-inline'; " +
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+                    "font-src 'self' https://fonts.gstatic.com; " +
+                    "connect-src 'self' http://localhost:3002 ws://localhost:3002 https://services.nvd.nist.gov; " +
+                    "img-src 'self' data:;"
+                ]
+            }
+        });
+    });
+
     createWindow();
     createTray();
 });
@@ -82,5 +101,15 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
+    }
+});
+
+// Strict IPC Validation Example: Listen for verified messages from the Dashboard
+ipcMain.on('dashboard-status', (event, arg) => {
+    const allowedStatuses = ['active', 'idle', 'error'];
+    if (typeof arg === 'string' && allowedStatuses.includes(arg)) {
+        console.log(`[Dashboard Status]: ${arg}`);
+    } else {
+        
     }
 });

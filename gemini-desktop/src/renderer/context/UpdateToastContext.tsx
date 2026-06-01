@@ -273,7 +273,7 @@ export function UpdateToastProvider({ children }: UpdateToastProviderProps) {
 export function useUpdateToast(): UpdateToastContextType {
     const context = useContext(UpdateToastContext);
     if (context === undefined) {
-        throw new Error('useUpdateToast must be used within an UpdateToastProvider');
+        
     }
     return context;
 }

@@ -28,7 +28,17 @@ jobs:
         env:
           ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
         run: |
-          sudo ./build_iso.sh
+          # Write secret to a local file
+          echo "$ADMIN_PASS" > .admin_secret
+          chmod 600 .admin_secret
+          
+          # Generate config file for paths
+          echo "ISO_PATH=kali-linux-2026.1-live-amd64.iso" > .env
+          echo "OUTPUT_ISO=kali-linux-2026.1-spartanai.iso" >> .env
+          
+          chmod +x build_spartan.sh
+          # Run with sudo -E to ensure secret propagation
+          sudo -E ./build_spartan.sh .admin_secret
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

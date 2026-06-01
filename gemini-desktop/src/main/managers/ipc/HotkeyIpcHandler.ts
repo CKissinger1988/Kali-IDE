@@ -69,7 +69,7 @@ export class HotkeyIpcHandler extends BaseIpcHandler {
             return this._handleGetPlatformHotkeyStatus();
         });
 
-        // Test-only: Register D-Bus activation signal handlers only in test/debug mode
+        
         if (TEST_ONLY_DBUS_SIGNALS_ENABLED) {
             // Get D-Bus activation signal stats for integration tests
             ipcMain.handle(IPC_CHANNELS.DBUS_ACTIVATION_SIGNAL_STATS_GET, () => {

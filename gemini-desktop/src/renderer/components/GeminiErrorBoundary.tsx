@@ -32,7 +32,7 @@ export class GeminiErrorBoundary extends Component<GeminiErrorBoundaryProps, Gem
     }
 
     componentDidMount(): void {
-        // Listen for debug error triggers (e2e testing)
+        
         if (window.electronAPI?.onDebugTriggerError) {
             this.unsubscribeDebug = window.electronAPI.onDebugTriggerError(() => {
                 // Simulate an error state for testing

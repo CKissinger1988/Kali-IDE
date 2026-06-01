@@ -99,7 +99,7 @@ export class BuilderAppPanelModel {
             globalStore.set(this.builderStatusAtom, status);
             this.updateSecretsLatch(status);
         } catch (err) {
-            console.error("Failed to load builder status:", err);
+            
         }
 
         // the apppanel does not render until appId is set, so this will never be null during initialization
@@ -144,7 +144,7 @@ export class BuilderAppPanelModel {
             globalStore.set(this.envVarsArrayAtom, envVarsArray);
             globalStore.set(this.envVarsDirtyAtom, false);
         } catch (err) {
-            console.error("Failed to load environment variables:", err);
+            
         }
     }
 
@@ -170,7 +170,7 @@ export class BuilderAppPanelModel {
             globalStore.set(this.errorAtom, "");
             this.debouncedRestart();
         } catch (err) {
-            console.error("Failed to save environment variables:", err);
+            
             globalStore.set(this.errorAtom, `Failed to save environment variables: ${err.message || "Unknown error"}`);
         }
     }
@@ -215,7 +215,7 @@ export class BuilderAppPanelModel {
                 builderid: builderId,
             });
         } catch (err) {
-            console.error("Failed to start builder:", err);
+            
             globalStore.set(this.errorAtom, `Failed to start builder: ${err.message || "Unknown error"}`);
         }
     }
@@ -238,7 +238,7 @@ export class BuilderAppPanelModel {
             await new Promise((resolve) => setTimeout(resolve, 100));
             getApi().doRefresh();
         } catch (err) {
-            console.error("Failed to switch builder app:", err);
+            
             globalStore.set(this.errorAtom, `Failed to switch builder app: ${err.message || "Unknown error"}`);
         }
     }
@@ -269,7 +269,7 @@ export class BuilderAppPanelModel {
                 }
             }
         } catch (err) {
-            console.error("Failed to load app.go:", err);
+            
             globalStore.set(this.errorAtom, `Failed to load app.go: ${err.message || "Unknown error"}`);
         } finally {
             globalStore.set(this.isLoadingAtom, false);
@@ -290,7 +290,7 @@ export class BuilderAppPanelModel {
             globalStore.set(this.errorAtom, "");
             this.debouncedRestart();
         } catch (err) {
-            console.error("Failed to save app.go:", err);
+            
             globalStore.set(this.errorAtom, `Failed to save app.go: ${err.message || "Unknown error"}`);
         }
     }

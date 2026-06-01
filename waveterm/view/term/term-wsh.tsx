@@ -26,7 +26,7 @@ export class TermWshClient extends WshClient {
     async handle_vdomcreatecontext(rh: RpcResponseHelper, data: VDomCreateContext) {
         const source = rh.getSource();
         if (isBlank(source)) {
-            throw new Error("source cannot be blank");
+            
         }
         console.log("vdom-create", source, data);
         const tabId = globalStore.get(atoms.staticTabId);
@@ -124,7 +124,7 @@ export class TermWshClient extends WshClient {
 
         if (data.lastcommand) {
             if (globalStore.get(termWrap.shellIntegrationStatusAtom) == null) {
-                throw new Error("Cannot get last command data without shell integration");
+                
             }
 
             let startBufferIndex = 0;
@@ -156,7 +156,7 @@ export class TermWshClient extends WshClient {
             let returnLines = lines;
             let returnStartLine = totalLines - endBufferIndex;
             if (lines.length > 1000) {
-                // there is a small bug here since this is computing a physical start line
+                
                 // after the lines have already been combined (because of potential wrapping)
                 // for now this isn't worth fixing, just noted
                 returnLines = lines.slice(lines.length - 1000);

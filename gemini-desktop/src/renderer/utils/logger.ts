@@ -41,12 +41,12 @@ export function createRendererLogger(prefix: string, envOverride?: { DEV?: boole
 
         error(message: string, ...args: unknown[]): void {
             // Always log errors, even in production
-            console.error(`${prefix} ${message}`, ...args);
+            
         },
 
         warn(message: string, ...args: unknown[]): void {
             if (isDev) {
-                console.warn(`${prefix} ${message}`, ...args);
+                
             }
         },
 

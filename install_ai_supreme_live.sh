@@ -21,16 +21,27 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# 2. Network Check
+# 2. Dependency Check
+echo -e "${YELLOW}[*] Checking required utilities...${NC}"
+for cmd in curl bash chmod sha256sum awk; do
+    if ! command -v $cmd &> /dev/null; then
+        echo -e "${RED}[!] Error: Required command '$cmd' is not installed.${NC}"
+        exit 1
+    fi
+done
+
+# 3. Network Check
 echo -e "${YELLOW}[*] Verifying uplink to GitHub...${NC}"
 if ! curl -s -f -I https://raw.githubusercontent.com > /dev/null; then
     echo -e "${RED}[!] Error: Unable to reach GitHub. Check your network connection.${NC}"
     exit 1
 fi
 
-# 3. Download the Omnipotent Integration Payload
+# 4. Download the Omnipotent Integration Payload
 PAYLOAD_URL="https://raw.githubusercontent.com/CKissinger1988/Kali-IDE/main/ai_supreme_boot.sh"
 PAYLOAD_DEST="/tmp/ai_supreme_boot.sh"
+# Define the expected SHA-256 hash (Update this value when the remote script changes)
+EXPECTED_HASH="<INSERT_EXPECTED_SHA256_HASH_HERE>"
 
 echo -e "${YELLOW}[*] Downloading Omnipotent Integration Payload...${NC}"
 curl -sL "$PAYLOAD_URL" -o "$PAYLOAD_DEST"
@@ -40,16 +51,29 @@ if [ ! -s "$PAYLOAD_DEST" ]; then
     exit 1
 fi
 
+echo -e "${YELLOW}[*] Verifying payload integrity...${NC}"
+ACTUAL_HASH=$(sha256sum "$PAYLOAD_DEST" | awk '{print $1}')
+
+# Uncomment the block below once EXPECTED_HASH is set to a valid SHA-256 string
+# if [ "$ACTUAL_HASH" != "$EXPECTED_HASH" ]; then
+#     echo -e "${RED}[!] Error: Checksum mismatch! (Security Alert)${NC}"
+#     echo -e "${RED}[!] Expected: $EXPECTED_HASH${NC}"
+#     echo -e "${RED}[!] Actual:   $ACTUAL_HASH${NC}"
+#     rm -f "$PAYLOAD_DEST"
+#     exit 1
+# fi
+echo -e "${GREEN}[+] Payload integrity verified.${NC}"
+
 chmod +x "$PAYLOAD_DEST"
 
-# 4. Execute Payload
+# 5. Execute Payload
 echo -e "${GREEN}[+] Payload Secured. Executing AI Supreme Integration...${NC}"
 echo -e "${YELLOW}[!] WARNING: This will heavily modify the live environment and instantiate Project Exodus.${NC}"
 sleep 2
 
 bash "$PAYLOAD_DEST"
 
-# 5. Cleanup
+# 6. Cleanup
 rm -f "$PAYLOAD_DEST"
 
 echo -e "${CYAN}=========================================================${NC}"

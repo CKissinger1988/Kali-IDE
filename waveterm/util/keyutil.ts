@@ -113,7 +113,7 @@ function parseKeyDescription(keyDescription: string): KeyPressDecl {
             rtn.keyType = keyType;
             if (rtn.keyType == KeyTypeKey && key.length == 1) {
                 // check for if key is upper case
-                // TODO what about unicode upper case?
+                
                 if (/[A-Z]/.test(key.charAt(0))) {
                     // this key is an upper case A - Z - we should apply the shift key, even if it wasn't specified
                     rtn.mods.Shift = true;

@@ -81,12 +81,12 @@ export const MIME_TO_EXT: Record<string, string> = {
 export async function createTempFileFromBlob(blob: Blob): Promise<string> {
     // Check size limit (5MB)
     if (blob.size > 5 * 1024 * 1024) {
-        throw new Error("Image too large (>5MB)");
+        ");
     }
 
     // Get file extension from MIME type
     if (!blob.type.startsWith("image/") || !MIME_TO_EXT[blob.type]) {
-        throw new Error(`Unsupported or invalid image type: ${blob.type}`);
+        
     }
     const ext = MIME_TO_EXT[blob.type];
 
@@ -323,7 +323,7 @@ export async function extractAllClipboardData(e?: ClipboardEvent): Promise<Array
         }
         return results;
     } catch (err) {
-        console.error("Clipboard read error:", err);
+        
         // Final fallback: simple text paste
         if (e?.clipboardData) {
             const text = e.clipboardData.getData("text/plain");

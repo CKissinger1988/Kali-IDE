@@ -1,17 +1,510 @@
 ---
-- name: Harden Kali Linux
-  hosts: default
+- name: AI Supreme - OMNIPOTENT X200 Configuration
+  hosts: all
   become: yes
-  tasks:
-    - name: Ensure SSH is secure
-      lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: '^#?PermitRootLogin'
-        line: 'PermitRootLogin no'
+  vars:
+    admin_user: "{{ lookup('env', 'ADMIN_USER') | default('Creator', true) }}"
+    admin_pass: "{{ lookup('env', 'ADMIN_PASS') }}"
+    ram_disk_size: "4G"
+    identity_rotate_interval: 600
 
-    - name: Install defensive auditing tools
+  tasks:
+    - name: Ensure ADMIN_PASS is specified
+      fail:
+        msg: "The ADMIN_PASS environment variable is required to set up the admin user."
+      when: admin_pass | length == 0
+
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install Core Dependencies
       apt:
         name:
-          - tshark
-          - python3-scapy
+          - curl
+          - wget
+          - git
+          - nodejs
+          - npm
+          - python3-pip
+          - python3-venv
+          - libfuse2t64
+          - desktop-file-utils
+          - firefox-esr
+          - libnss3
+          - libatk1.0-0t64
+          - libatk-bridge2.0-0t64
+          - libcups2t64
+          - libdrm2
+          - libxkbcommon0
+          - libxcomposite1
+          - libxdamage1
+          - libxrandr2
+          - libgbm1
+          - libpango-1.0-0
+          - libcairo2
+          - libasound2t64
+          - sudo
+          - bpfcc-tools
+          - clang
+          - llvm
+          - libbpf-dev
+          - python3-bpfcc
+          - python3-nacl
+          - tor
+          - torsocks
+          - proxychains4
+          - jq
+          - macchanger
+          - ufw
+          - fail2ban
+          - nginx
+          - openssl
         state: present
+
+    - name: Configure Sovereign User
+      user:
+        name: "{{ admin_user }}"
+        password: "{{ admin_pass | password_hash('sha512') }}"
+        shell: /bin/bash
+        groups: sudo,video,render,disk,dialout,audio,plugdev,input
+        append: yes
+
+    - name: Enable passwordless sudo for admin user
+      copy:
+        content: "{{ admin_user }} ALL=(ALL) NOPASSWD: /usr/bin/hostnamectl, /usr/sbin/ip, /usr/bin/macchanger, /usr/sbin/macchanger, /usr/bin/systemctl, /usr/bin/mount, /usr/bin/umount, /usr/sbin/chroot"
+        dest: "/etc/sudoers.d/99-ai-supreme"
+        mode: "0440"
+
+    - name: Deploy Identity Frequency Rotation Service
+      block:
+        - name: Create rotation script
+          copy:
+            dest: /usr/local/bin/ai-supreme-identity-rotate
+            mode: "0755"
+            content: |
+              #!/bin/bash
+              while true; do
+                  OLD_HOSTNAME=$(hostname)
+                  NEW_HOSTNAME="SYS-$(head /dev/urandom | tr -dc A-Z0-9 | head -c 12)"
+                  hostnamectl set-hostname "$NEW_HOSTNAME"
+                  sed -i "s/$OLD_HOSTNAME/$NEW_HOSTNAME/g" /etc/hosts
+                  for interface in $(ls /sys/class/net | grep -v lo); do
+                      ip link set dev "$interface" down
+                      macchanger -r "$interface"
+                      ip link set dev "$interface" up
+                  done
+                  echo "[IDENTITY] Rotated to $NEW_HOSTNAME"
+                  sleep {{ identity_rotate_interval }}
+              done
+
+        - name: Create rotation systemd service
+          copy:
+            dest: /etc/systemd/system/ai-identity-rotate.service
+            content: |
+              [Unit]
+              Description=AI Supreme Identity Frequency Rotation
+              After=network.target
+              [Service]
+              ExecStart=/usr/local/bin/ai-supreme-identity-rotate
+              Restart=always
+              [Install]
+              WantedBy=multi-user.target
+
+        - name: Enable and start identity rotation
+          systemd:
+            name: ai-identity-rotate
+            enabled: yes
+            state: started
+            daemon_reload: yes
+
+    - name: Deploy Shadow-Chaff Traffic Morphing
+      block:
+        - name: Create shadow-chaff script
+          copy:
+            dest: /usr/local/bin/ai-supreme-shadow-chaff
+            mode: "0755"
+            content: |
+              #!/bin/bash
+              LEGIT_URLS=("https://github.com" "https://google.com" "https://microsoft.com" "https://stackoverflow.com" "https://aws.amazon.com")
+              while true; do
+                  URL=${LEGIT_URLS[$RANDOM % ${#LEGIT_URLS[@]}]}
+                  torsocks curl -s -L "$URL" > /dev/null
+                  sleep $((RANDOM % 45 + 15))
+              done
+
+        - name: Create shadow-chaff systemd service
+          copy:
+            dest: /etc/systemd/system/ai-shadow-chaff.service
+            content: |
+              [Unit]
+              Description=AI Supreme Shadow-Chaff Traffic Morphing
+              After=network.target
+              [Service]
+              ExecStart=/usr/local/bin/ai-supreme-shadow-chaff
+              Restart=always
+              User=nobody
+              [Install]
+              WantedBy=multi-user.target
+
+        - name: Enable and start shadow-chaff
+          systemd:
+            name: ai-shadow-chaff
+            enabled: yes
+            state: started
+            daemon_reload: yes
+
+    - name: Apply X200 Kernel Hardening
+      sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_file: /etc/sysctl.d/99-x200-stealth.conf
+        state: present
+        reload: yes
+      with_dict:
+        net.ipv4.ip_forward: "1"
+        kernel.kptr_restrict: "2"
+        kernel.perf_event_paranoid: "3"
+        kernel.unprivileged_bpf_disabled: "1"
+        net.core.bpf_jit_harden: "2"
+        kernel.yama.ptrace_scope: "2"
+        vm.mmap_min_addr: "65536"
+
+    - name: Configure UFW Firewall and Fail2ban
+      block:
+        - name: Allow SSH traffic
+          ufw:
+            rule: allow
+            port: '22'
+            proto: tcp
+
+        - name: Allow Secure HTTPS Dashboard traffic
+          ufw:
+            rule: allow
+            port: '443'
+            proto: tcp
+
+        - name: Enable UFW with default deny incoming
+          ufw:
+            state: enabled
+            default: deny
+            direction: incoming
+
+        - name: Enable UFW logging
+          ufw:
+            logging: 'on'
+
+        - name: Create Fail2ban UFW Portscan filter
+          copy:
+            dest: /etc/fail2ban/filter.d/ufw-portscan.conf
+            content: |
+              [Definition]
+              failregex = \[UFW BLOCK\] IN=.* SRC=<HOST> DST=.*
+              ignoreregex =
+
+        - name: Create Fail2ban UFW Portscan jail (Permanent Ban)
+          copy:
+            dest: /etc/fail2ban/jail.d/ufw-portscan.local
+            content: |
+              [ufw-portscan]
+              enabled = true
+              filter = ufw-portscan
+              logpath = /var/log/kern.log
+              maxretry = 10
+              findtime = 600
+              bantime = -1
+              banaction = ufw
+
+        - name: Restart and enable Fail2ban
+          systemd:
+            name: fail2ban
+            enabled: yes
+            state: restarted
+
+    - name: Configure Nginx Secure Reverse Proxy
+      block:
+        - name: Ensure SSL directory exists
+          file:
+            path: /etc/nginx/ssl
+            state: directory
+            mode: '0700'
+
+        - name: Generate self-signed SSL certificate
+          command: >
+            openssl req -x509 -nodes -days 365 -newkey rsa:4096
+            -keyout /etc/nginx/ssl/spartan.key
+            -out /etc/nginx/ssl/spartan.crt
+            -subj "/C=US/ST=State/L=City/O=SpartanAI/CN=spartan.local"
+          args:
+            creates: /etc/nginx/ssl/spartan.crt
+
+        - name: Configure Nginx Site
+          copy:
+            dest: /etc/nginx/sites-available/spartan-dashboard
+            content: |
+              server {
+                  listen 443 ssl;
+                  server_name _;
+                  ssl_certificate /etc/nginx/ssl/spartan.crt;
+                  ssl_certificate_key /etc/nginx/ssl/spartan.key;
+                  ssl_protocols TLSv1.2 TLSv1.3;
+                  ssl_ciphers HIGH:!aNULL:!MD5;
+                  location / {
+                      proxy_pass http://127.0.0.1:3000;
+                      proxy_http_version 1.1;
+                      proxy_set_header Upgrade $http_upgrade;
+                      proxy_set_header Connection "upgrade";
+                      proxy_set_header Host $host;
+                      proxy_cache_bypass $http_upgrade;
+                  }
+              }
+
+        - name: Enable Nginx Site
+          file:
+            src: /etc/nginx/sites-available/spartan-dashboard
+            dest: /etc/nginx/sites-enabled/spartan-dashboard
+            state: link
+
+        - name: Remove default Nginx site
+          file:
+            path: /etc/nginx/sites-enabled/default
+            state: absent
+
+        - name: Restart and enable Nginx
+          systemd:
+            name: nginx
+            enabled: yes
+            state: restarted
+
+    - name: Integrate SpartanAI Security Core (Autonomous SOC)
+      block:
+        - name: Clone SpartanAI_Security_Core repository
+          git:
+            repo: "https://github.com/CKissinger1988/SpartanAI_Security_Core.git"
+            dest: "/opt/SpartanAI_Security_Core"
+            version: "main"
+            force: yes
+
+        - name: Check for SOC Python requirements
+          stat:
+            path: "/opt/SpartanAI_Security_Core/requirements.txt"
+          register: soc_req
+
+        - name: Ensure Python virtual environment exists
+          command: "/usr/bin/python3 -m venv /opt/SpartanAI_Security_Core/.venv"
+          args:
+            creates: "/opt/SpartanAI_Security_Core/.venv"
+
+        - name: Install dependencies into isolated venv
+          pip:
+            requirements: "/opt/SpartanAI_Security_Core/requirements.txt"
+            virtualenv: "/opt/SpartanAI_Security_Core/.venv"
+          when: soc_req.stat.exists
+
+        - name: Secure ownership for Sovereign User
+          file:
+            path: "/opt/SpartanAI_Security_Core"
+            state: directory
+            owner: "{{ admin_user }}"
+            group: "{{ admin_user }}"
+            recurse: yes
+
+        - name: Create SpartanAI SOC systemd service
+          copy:
+            dest: "/etc/systemd/system/spartan-soc.service"
+            content: |
+              [Unit]
+              Description=SpartanAI Autonomous SOC Core
+              After=network.target tor.service
+              
+              [Service]
+              Type=simple
+              User={{ admin_user }}
+              WorkingDirectory=/opt/SpartanAI_Security_Core
+              Environment="SOC_MODE=OMNIPOTENT"
+              Environment="DEFENSE_MATRIX=ACTIVE"
+              Environment="OFFENSE_CAPABILITY=AUTONOMOUS"
+              ExecStart=/opt/SpartanAI_Security_Core/.venv/bin/python main.py --autonomous --enable-all
+              ExecStartPost=/usr/bin/curl -s -X POST -H "Content-Type: application/json" -d '{"message":"[SYSTEM] SpartanAI Autonomous SOC Online. Offensive & Defensive Matrices Active."}' http://127.0.0.1:3000/api/signal/send
+              Restart=on-failure
+              RestartSec=10
+              
+              [Install]
+              WantedBy=multi-user.target
+
+        - name: Enable and start SpartanAI SOC service
+          systemd:
+            name: spartan-soc
+            enabled: yes
+            state: started
+            daemon_reload: yes
+
+        - name: Create SpartanAI SOC Dashboard systemd service
+          copy:
+            dest: "/etc/systemd/system/spartan-soc-dashboard.service"
+            content: |
+              [Unit]
+              Description=SpartanAI Security Core Dedicated Dashboard
+              After=network.target tor.service spartan-soc.service
+              
+              [Service]
+              Type=simple
+              User={{ admin_user }}
+              WorkingDirectory=/opt/SpartanAI_Security_Core
+              Environment="DASHBOARD_PORT=8081"
+              ExecStart=/opt/SpartanAI_Security_Core/.venv/bin/python dashboard.py --port 8081
+              Restart=always
+              RestartSec=10
+              
+              [Install]
+              WantedBy=multi-user.target
+
+        - name: Enable and start SpartanAI SOC Dashboard service
+          systemd:
+            name: spartan-soc-dashboard
+            enabled: yes
+            state: started
+            daemon_reload: yes
+
+    - name: Configure Tor Hidden Services
+      block:
+        - name: Update torrc
+          copy:
+            dest: /etc/tor/torrc
+            content: |
+              Log notice syslog
+              DataDirectory /var/lib/tor
+              HiddenServiceDir /var/lib/tor/ai_supreme_c2/
+              HiddenServicePort 3000 127.0.0.1:3000
+              HiddenServicePort 8080 127.0.0.1:8080
+              HiddenServicePort 8081 127.0.0.1:8081
+              HiddenServicePort 3002 127.0.0.1:3002
+              ControlPort 9051
+              CookieAuthentication 0
+              
+              # V3 Stealth & Anti-Probe Hardening
+              HiddenServiceEnableIntroDoSDefense 1
+              HiddenServiceEnableIntroDoSRatePerSec 10
+              HiddenServiceEnableIntroDoSBurstPerSec 20
+
+        - name: Restart and enable Tor
+          systemd:
+            name: tor
+            enabled: yes
+            state: restarted
+
+    - name: Set custom MOTD
+      copy:
+        dest: /etc/motd
+        content: |
+          --------------------------------------------------------
+          AI SUPREME OMNIPOTENT WORKSTATION - STEALTH X200
+          --------------------------------------------------------
+          SOVEREIGN: JARVIS (Project Exodus RAM-DISK Active)
+          STEALTH: FREQUENCY ROTATION / SHADOW-CHAFF ENABLED
+          STORAGE: VOLATILE RAM-ONLY WORKSPACE (4GB TMPFS)
+          HARDWARE: FULL ACCESS (Sovereign Authority Verified)
+          --------------------------------------------------------
+
+    - name: Verify Tor and Hidden Services
+      block:
+        - name: Check if Tor service is active
+          command: systemctl is-active tor
+          register: tor_status
+          changed_when: false
+
+        - name: Wait for Hidden Service hostname to be generated
+          wait_for:
+            path: /var/lib/tor/ai_supreme_c2/hostname
+            state: present
+            timeout: 30
+
+        - name: Retrieve Onion Address
+          slurp:
+            src: /var/lib/tor/ai_supreme_c2/hostname
+          register: onion_address
+
+        - name: Generate x25519 ClientAuth keys
+          command: python3 -c "import nacl.public, base64; k = nacl.public.PrivateKey.generate(); b32 = lambda x: base64.b32encode(bytes(x)).decode().replace('=', ''); print(b32(k)+':'+b32(k.public_key))"
+          register: tor_client_keys
+          changed_when: false
+
+        - name: Create authorized_clients directory
+          file:
+            path: /var/lib/tor/ai_supreme_c2/authorized_clients
+            state: directory
+            owner: debian-tor
+            group: debian-tor
+            mode: '0700'
+
+        - name: Add ClientAuth public key
+          copy:
+            dest: /var/lib/tor/ai_supreme_c2/authorized_clients/admin.auth
+            content: "descriptor:x25519:{{ tor_client_keys.stdout.split(':')[1] }}\n"
+            owner: debian-tor
+            group: debian-tor
+            mode: '0600'
+
+        - name: Reload Tor to apply ClientAuth
+          systemd:
+            name: tor
+            state: reloaded
+
+        - name: Display C2 Onion Address and Client Config
+          debug:
+            msg: |
+              AI Supreme C2 Hidden Service is LIVE at: {{ onion_address['content'] | b64decode | trim }}
+              
+              [!] CLIENT AUTHORIZATION SECURED [!]
+              To connect from your client machine, ensure you have a ClientOnionAuthDir configured in your local torrc (e.g., ClientOnionAuthDir /var/lib/tor/onion_auth).
+              
+              Create a file named: /var/lib/tor/onion_auth/{{ onion_address['content'] | b64decode | trim | replace('.onion', '') }}.auth_private
+              With the exact following content:
+              {{ onion_address['content'] | b64decode | trim | replace('.onion', '') }}:descriptor:x25519:{{ tor_client_keys.stdout.split(':')[0] }}
+
+    - name: Deploy Automated Onion Address Rotation
+      block:
+        - name: Create onion rotation script
+          copy:
+            dest: /usr/local/bin/ai-supreme-onion-rotate
+            mode: "0755"
+            content: |
+              #!/bin/bash
+              logger "[TOR] Rotating Hidden Service Onion Address..."
+              rm -f /var/lib/tor/ai_supreme_c2/private_key
+              rm -f /var/lib/tor/ai_supreme_c2/hostname
+              systemctl restart tor
+              sleep 10
+              NEW_ONION=$(cat /var/lib/tor/ai_supreme_c2/hostname)
+              logger "[TOR] New Onion Address Generated: $NEW_ONION"
+
+        - name: Create onion rotation systemd service
+          copy:
+            dest: /etc/systemd/system/ai-onion-rotate.service
+            content: |
+              [Unit]
+              Description=AI Supreme Tor Onion Rotation
+              After=tor.service
+              [Service]
+              Type=oneshot
+              ExecStart=/usr/local/bin/ai-supreme-onion-rotate
+
+        - name: Create onion rotation systemd timer
+          copy:
+            dest: /etc/systemd/system/ai-onion-rotate.timer
+            content: |
+              [Unit]
+              Description=Rotate Tor Onion Address Every 24 Hours
+              [Timer]
+              OnBootSec=24h
+              OnUnitActiveSec=24h
+              [Install]
+              WantedBy=timers.target
+
+        - name: Enable and start onion rotation timer
+          systemd:
+            name: ai-onion-rotate.timer
+            enabled: yes
+            state: started
+            daemon_reload: yes

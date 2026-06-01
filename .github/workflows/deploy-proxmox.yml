@@ -1,0 +1,37 @@
+name: Deploy Infrastructure to Proxmox
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "infra/**"
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  deploy-ansible:
+    name: Run Ansible Playbook
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROXMOX_SSH_KEY }}
+
+      - name: Add Proxmox host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.PROXMOX_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Execute Ansible Playbook
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: infra/playbook.yml
+          key: ${{ secrets.PROXMOX_SSH_KEY }}
+          inventory: |
+            [all]
+            ${{ secrets.PROXMOX_HOST }} ansible_user=${{ secrets.PROXMOX_USER }}
+          options: |
+            --extra-vars "admin_pass=${{ secrets.ADMIN_PASS }}"

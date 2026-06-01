@@ -55,7 +55,7 @@ const initialState: UpdateNotificationState = {
 export function useUpdateNotifications() {
     const [state, setState] = useState<UpdateNotificationState>(initialState);
 
-    // Debug log on every render - removed
+    
 
     /**
      * Dismiss the current toast notification

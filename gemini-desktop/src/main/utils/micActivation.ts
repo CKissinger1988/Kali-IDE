@@ -37,7 +37,7 @@ export type MicActivationResult = {
  * if (result.success) {
  *     console.log('Microphone activated');
  * } else {
- *     console.error('Microphone activation failed:', result.error);
+ *     
  * }
  * ```
  */

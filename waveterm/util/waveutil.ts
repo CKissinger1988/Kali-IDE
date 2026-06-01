@@ -84,7 +84,7 @@ export function computeBgStyleFromMeta(meta: Omit<BackgroundConfigType, "display
         }
         return rtn;
     } catch (e) {
-        console.error("error processing background", e);
+        
         return null;
     }
 }
