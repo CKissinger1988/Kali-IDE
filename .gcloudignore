@@ -1,0 +1,31 @@
+# Ignore everything
+*
+
+# Unignore only what we need for the build
+!Dockerfile
+!package.json
+!package-lock.json
+!src/
+!src/**
+!api_*.js
+!dashboard/
+!dashboard/package.json
+!dashboard/package-lock.json
+!dashboard/src/
+!dashboard/src/**
+!dashboard/public/
+!dashboard/public/**
+!dashboard/index.html
+!dashboard/tsconfig*.json
+!dashboard/vite.config.ts
+!dashboard/postcss.config.js
+!dashboard/tailwind.config.js
+!dashboard/eslint.config.js
+!.env
+
+# Re-ignore node_modules if unignored by mistake
+node_modules/
+dashboard/node_modules/
+dist/
+dashboard/dist/
+.git/

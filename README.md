@@ -36,6 +36,29 @@ To permanently integrate the AI Supreme core into your system, execute the orche
 sudo ./ai_supreme_boot.sh deploy
 ```
 
+### ☁️ GCP Deployment (Testing)
+
+The project includes configurations for testing on Google Cloud Platform:
+
+#### 1. Cloud Run (Management Core)
+Deploy the Sovereign Dashboard and API to Cloud Run for quick access:
+
+**Via GitHub Actions (Automated):**
+1. Add `GCP_PROJECT_ID` and `GCP_SA_KEY` (JSON Service Account Key) to your GitHub repository secrets.
+2. Push to `main` or trigger the **"Build and Deploy Sovereign Core to GCP"** workflow manually.
+
+**Via Local CLI (Manual):**
+```bash
+gcloud builds submit --config cloudbuild.yaml
+```
+
+#### 2. Compute Engine (Hardened OS)
+Launch a full offensive workstation on GCE:
+```bash
+chmod +x deploy_gce.sh
+./deploy_gce.sh
+```
+
 Access the **Sovereign Dashboard** via the Electron wrapper or locally on port `3002`.
 
 ---
