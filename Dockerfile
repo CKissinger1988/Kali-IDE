@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (including native modules)
+# Install dependencies (including native modules for build-time)
 RUN npm install
 
 # Copy dashboard code and build it
@@ -28,17 +28,24 @@ FROM node:20
 
 WORKDIR /app
 
-# Install runtime dependencies (like tor)
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     tor \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only the necessary files from builder
-COPY --from=builder /app/node_modules ./node_modules
+# Copy root package files
+COPY package*.json ./
+
+# Install production dependencies only (will build native modules for better-sqlite3)
+RUN npm install --omit=dev
+
+# Copy built dashboard and bundled server
 COPY --from=builder /app/dist/server.js ./dist/server.js
 COPY --from=builder /app/dashboard/dist ./dashboard/dist
-COPY --from=builder /app/package.json ./package.json
+
+# Debug: list better-sqlite3 content to verify bindings
+RUN find node_modules/better-sqlite3 -name "*.node"
 
 # Start the server
 CMD ["node", "dist/server.js"]
