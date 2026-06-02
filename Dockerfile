@@ -59,8 +59,5 @@ COPY --from=builder /app/dist/server.js ./dist/server.js
 COPY --from=builder /app/dashboard/dist ./dashboard/dist
 COPY --from=builder /app/api_*.js ./
 
-# Expose port
-EXPOSE 3002
-
 # Start the server
 CMD ["node", "dist/server.js"]
