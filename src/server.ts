@@ -8,14 +8,14 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 
-import apiNetwork from '../api_network.js';
-import apiPcap from '../api_proxmox_pcap.js';
-import apiAuth from '../api_auth.js';
-import apiMsf from '../api_msf.js';
-import apiGhost from '../api_ghost.js';
-import apiSovereign from '../api_sovereign.js';
-import apiSignal from '../api_signal.js';
-import apiHexstrike from '../api_hexstrike.js';
+import apiNetwork from '../api_network.cjs';
+import apiPcap from '../api_proxmox_pcap.cjs';
+import apiAuth from '../api_auth.cjs';
+import apiMsf from '../api_msf.cjs';
+import apiGhost from '../api_ghost.cjs';
+import apiSovereign from '../api_sovereign.cjs';
+import apiSignal from '../api_signal.cjs';
+import apiHexstrike from '../api_hexstrike.cjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

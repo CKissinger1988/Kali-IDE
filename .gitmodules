@@ -1,3 +1,6 @@
 [submodule "gemini-cli"]
 	path = gemini-cli
 	url = https://github.com/google-gemini/gemini-cli
+[submodule "opencode"]
+	path = opencode
+	url = https://github.com/CKissinger1988/opencode.git

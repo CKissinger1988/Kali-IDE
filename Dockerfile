@@ -13,9 +13,6 @@ RUN apt-get update && apt-get install -y \
 # Copy root package files
 COPY package*.json ./
 
-# Debug: list files to verify existence of package-lock.json
-RUN ls -la
-
 # Install root dependencies
 RUN npm install
 
@@ -30,7 +27,8 @@ RUN npm run build
 # Copy server code
 WORKDIR /app
 COPY src ./src
-COPY api_*.js ./
+COPY lib ./lib
+COPY api_*.cjs ./
 COPY .env ./
 
 # Bundle server
