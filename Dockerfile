@@ -1,14 +1,7 @@
 # Base image with Node.js
-FROM node:20-slim AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
-
-# Install build essentials for native modules (e.g., better-sqlite3)
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
@@ -31,7 +24,7 @@ COPY .env ./
 RUN npm run build:bundle
 
 # Production image
-FROM node:20-slim
+FROM node:20
 
 WORKDIR /app
 
@@ -42,7 +35,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only the necessary files from builder
-# We need node_modules for better-sqlite3 native bindings
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist/server.js ./dist/server.js
 COPY --from=builder /app/dashboard/dist ./dashboard/dist
