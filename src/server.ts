@@ -8,18 +8,14 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 
-// Import routers (using CommonJS require because the files use module.exports)
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-
-const apiNetwork = require('../api_network.js');
-const apiPcap = require('../api_proxmox_pcap.js');
-const apiAuth = require('../api_auth.js');
-const apiMsf = require('../api_msf.js');
-const apiGhost = require('../api_ghost.js');
-const apiSovereign = require('../api_sovereign.js');
-const apiSignal = require('../api_signal.js');
-const apiHexstrike = require('../api_hexstrike.js');
+import apiNetwork from '../api_network.js';
+import apiPcap from '../api_proxmox_pcap.js';
+import apiAuth from '../api_auth.js';
+import apiMsf from '../api_msf.js';
+import apiGhost from '../api_ghost.js';
+import apiSovereign from '../api_sovereign.js';
+import apiSignal from '../api_signal.js';
+import apiHexstrike from '../api_hexstrike.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
