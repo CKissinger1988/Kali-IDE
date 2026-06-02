@@ -21,15 +21,8 @@ const apiSovereign = require('../api_sovereign.js');
 const apiSignal = require('../api_signal.js');
 const apiHexstrike = require('../api_hexstrike.js');
 
-const getDirname = () => {
-  try {
-    return path.dirname(fileURLToPath(import.meta.url));
-  } catch (e) {
-    // In CJS bundled environments, __dirname might be available
-    return typeof __dirname !== 'undefined' ? __dirname : process.cwd();
-  }
-};
-const __dirname_resolved = getDirname();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -80,7 +73,7 @@ const authenticateSovereign = (req: any, res: any, next: any) => {
 
 // Public Routes
 app.use('/api/auth', apiAuth);
-app.use(express.static(path.join(__dirname_resolved, '../dashboard/dist')));
+app.use(express.static(path.join(__dirname, '../dashboard/dist')));
 
 // Protected API Routes
 app.use('/api/network', authenticateSovereign, apiNetwork);
@@ -155,7 +148,7 @@ io.on('connection', (socket) => {
 
 // Fallback for SPA
 app.get('/{*splat}', (req, res) => {
-  res.sendFile(path.join(__dirname_resolved, '../dashboard/dist/index.html'));
+  res.sendFile(path.join(__dirname, '../dashboard/dist/index.html'));
 });
 
 httpServer.listen(PORT, () => {

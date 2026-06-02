@@ -12,7 +12,7 @@
     "unbox": "node scripts/unbox_protocol.cjs",
     "purity": "node scripts/universal_debug_purity.js",
     "shell": "electron sovereign_shell.js",
-    "build:bundle": "esbuild src/server.ts --bundle --minify --platform=node --target=node18 --format=cjs --outfile=dist/server.js --external:sqlite3 --external:canvas --external:node:sqlite",
+    "build:bundle": "esbuild src/server.ts --bundle --minify --platform=node --target=node20 --format=esm --outfile=dist/server.js --external:sqlite3 --external:canvas --external:node:sqlite",
     "build": "npm run build:bundle"
   },
   "dependencies": {

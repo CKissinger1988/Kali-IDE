@@ -22,7 +22,7 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('he
 const SOVEREIGN_PUBLIC_KEY = process.env.SOVEREIGN_PUBLIC_KEY; // Required for asymmetric command signing
 
 // --- Persistence Layer ---
-const dbPath = process.env.DB_PATH || path.join(__dirname, 'sovereign.db');
+const dbPath = process.env.DB_PATH || (process.env.K_SERVICE ? '/tmp/sovereign.db' : path.join(__dirname, 'sovereign.db'));
 const db = new Database(dbPath);
 
 db.exec(`
